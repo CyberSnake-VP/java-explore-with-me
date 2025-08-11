@@ -26,6 +26,7 @@ public class ErrorHandler {
         log.error("Ошибка при валидации: {}", ex.getMessage());
         return ErrorResponse.builder().error(ex.getMessage()).build();
     }
+
     // В отличие от проверки тела запроса,
     // при нарушении ограничений на уровне параметров выбрасывается исключение ConstraintViolationException
     @ResponseStatus(HttpStatus.BAD_REQUEST)

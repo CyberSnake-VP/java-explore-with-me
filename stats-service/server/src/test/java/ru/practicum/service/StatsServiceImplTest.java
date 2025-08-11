@@ -8,10 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.model.EndpointHit;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.mapper.EndpointHitMapper;
+import ru.practicum.model.EndpointHit;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -30,7 +30,7 @@ class StatsServiceImplTest {
 
     @Test
     void testAddEndpoint() {
-        EndpointHitDto endpointHitDto = makeEndpointHitDto("ewm-main-service","192.163.0.1", "/events/1", "2025-01-01 00:00:00");
+        EndpointHitDto endpointHitDto = makeEndpointHitDto("ewm-main-service", "192.163.0.1", "/events/1", "2025-01-01 00:00:00");
 
         statsService.addEndpoint(endpointHitDto);
 
@@ -48,9 +48,9 @@ class StatsServiceImplTest {
     @Test
     void testGetStats() {
         List<EndpointHitDto> endpointHits = List.of(
-                makeEndpointHitDto("ewm-main-service","192.163.0.1", "/events/1", "2025-02-01 00:00:00"),
-                makeEndpointHitDto("ewm-main-service","192.163.0.1", "/events/1", "2025-03-01 00:00:00"),
-                makeEndpointHitDto("ewm-main-service","192.163.0.1", "/events/1", "2025-04-01 00:00:00")
+                makeEndpointHitDto("ewm-main-service", "192.163.0.1", "/events/1", "2025-02-01 00:00:00"),
+                makeEndpointHitDto("ewm-main-service", "192.163.0.1", "/events/1", "2025-03-01 00:00:00"),
+                makeEndpointHitDto("ewm-main-service", "192.163.0.1", "/events/1", "2025-04-01 00:00:00")
         );
 
         for (EndpointHitDto endpointHitDto : endpointHits) {
@@ -72,8 +72,6 @@ class StatsServiceImplTest {
             )));
         }
     }
-
-
 
 
     private EndpointHitDto makeEndpointHitDto(String app, String ip, String uri, String timestamp) {
