@@ -1,15 +1,15 @@
-package ru.practicum.stats.service;
+package ru.practicum.service;
 
 import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.EndpointHit;
+import ru.practicum.model.EndpointHit;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.mapper.EndpointHitMapper;
-import ru.practicum.stats.repository.StatsRepository;
+import ru.practicum.repository.StatsRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;

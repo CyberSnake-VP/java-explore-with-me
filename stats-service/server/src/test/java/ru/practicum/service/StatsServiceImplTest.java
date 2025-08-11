@@ -1,4 +1,4 @@
-package ru.practicum.stats.service;
+package ru.practicum.service;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.EndpointHit;
+import ru.practicum.model.EndpointHit;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.mapper.EndpointHitMapper;

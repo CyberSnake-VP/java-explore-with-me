@@ -1,6 +1,7 @@
 package ru.practicum;
 
 
+import jakarta.validation.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -11,6 +12,8 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class StatsClient extends BaseClient {
@@ -28,16 +31,42 @@ public class StatsClient extends BaseClient {
 
     }
 
-    public EndpointHitDto addHit(String app, String uri, String ip, LocalDateTime timestamp) {
-        EndpointHitDto dto =
-                EndpointHitDto.builder()
-                        .app(app)
-                        .uri(uri)
-                        .ip(ip)
-                        .timestamp(timestamp)
-                        .build();
+    public EndpointHitDto addHit(EndpointHitDto endpointHitDto) {
         ParameterizedTypeReference<EndpointHitDto> responseType = new ParameterizedTypeReference<>() {};
-       return post("/hit", dto, responseType).getBody();
+        return post("/hit", endpointHitDto, responseType).getBody();
+    }
+
+    public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
+        // проверим даты на валидность.
+        validDates(start, end);
+
+        /** Используем reference<List<ViewStatsDto> чтобы запарсить ответ сразу в список объектов ViewStatsDto*/
+        ParameterizedTypeReference<List<ViewStatsDto>> responseType = new ParameterizedTypeReference<>() {};
+        Map<String, Object> params = new HashMap<>();
+        params.put("start", start.format(DATE_TIME_FORMATTER));
+        params.put("end", end.format(DATE_TIME_FORMATTER));
+        params.put("unique", unique);
+        String uriString;
+        boolean isHasUri = !(Objects.isNull(uris) || uris.isEmpty());
+
+        /** Приходится использовать стрим, чтобы собрать одну строку из списка параметров uris
+         * Дело в том, что для параметров используется map, но у нас тогда ключ будет uris, а значения должны быть разные.
+         * Что не получится сделать.*/
+        if (isHasUri) {
+            uriString = uris.stream().map(uri -> "&uris=" + uri).collect(Collectors.joining());
+                   return get("/stats?start={start}&end={end}" + uriString + "&unique={unique}", params, responseType).getBody();
+        } else {
+                   return get("/stats?start={start}&end={end}&unique={unique}", params, responseType).getBody();
+        }
+
+    }
+
+    private void validDates(LocalDateTime start, LocalDateTime end) {
+        if (start.isAfter(end) || start.isEqual(end)) {
+            throw new ValidationException(String.format("Incorrected statistic period. Start: %s, End: %s", start, end));
+        }
     }
 
 }
+
+

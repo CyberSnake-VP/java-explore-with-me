@@ -2,9 +2,8 @@ package ru.practicum.mapper;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import ru.practicum.EndpointHit;
+import ru.practicum.model.EndpointHit;
 import ru.practicum.EndpointHitDto;
-import ru.practicum.ViewStatsDto;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EndpointHitMapper {
