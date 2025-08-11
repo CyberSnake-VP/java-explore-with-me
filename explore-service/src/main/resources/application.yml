@@ -1,5 +1,10 @@
 server:
   port: 8080
+stats-server:
+  # данная настройка указывает на порт локального хоста, если идет взаимодействие между сервисами в docker compose
+  # необходимо в environment прописать в качестве хоста конкретный сервис (environment: - STATS_SERVER_URL=http://stats-server:9090
+  # где stats-server имя сервиса статистики
+  url: http://localhost:9090
 
 spring:
   jpa:
@@ -20,5 +25,3 @@ spring:
     init:
       mode: always
 
-stats-server:
-  url: http://localhost:9090
