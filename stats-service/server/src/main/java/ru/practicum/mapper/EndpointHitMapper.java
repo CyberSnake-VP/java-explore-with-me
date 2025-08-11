@@ -17,9 +17,6 @@ public class EndpointHitMapper {
                 .build();
     }
 
-    public static ViewStatsDto mapToViewStatsDto(EndpointHit endpointHit) {
-        return new ViewStatsDto();
-    }
 
     public static EndpointHitDto mapToEndpointHitDto(EndpointHit endpointHit) {
         return EndpointHitDto.builder()

@@ -1,8 +1,8 @@
 server:
-  # заменить 9090
   port: 9090
 
 spring:
+  # настраиваем работу jpa c bd database-platform необходимо для корректной работы jpa с бд
   jpa:
     hibernate:
       ddl-auto: none
