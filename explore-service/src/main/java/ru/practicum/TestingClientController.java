@@ -23,6 +23,7 @@ public class TestingClientController {
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
     public EndpointHitDto addHit(@RequestBody @Valid EndpointHitDto endpointHitDto) {
+        log.info("controller: addHit: {}", endpointHitDto);
         return statsClient.addHit(endpointHitDto);
     }
 
@@ -31,6 +32,7 @@ public class TestingClientController {
                                        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") @RequestParam LocalDateTime end,
                                        @RequestParam(required = false) List<String> uris,
                                        @RequestParam(defaultValue = "false") boolean unique) {
+        log.info("controller: /stats params: start={}, end={}, uris={}, unique={}", start, end, uris, unique);
         return statsClient.getStats(start, end, uris, unique);
     }
 }
