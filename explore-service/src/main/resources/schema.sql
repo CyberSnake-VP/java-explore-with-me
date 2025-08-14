@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS test
+(
+    id   BIGINT GENERATED ALWAYS AS IDENTITY,
+    name varchar(255) NOT NULL,
+    CONSTRAINT pk_test PRIMARY KEY (id)
+);

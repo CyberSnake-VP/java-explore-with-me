@@ -1,0 +1,27 @@
+server:
+  port: 8080
+stats-server:
+  # данная настройка указывает на порт локального хоста, если идет взаимодействие между сервисами в docker compose
+  # необходимо в environment прописать в качестве хоста конкретный сервис (environment: - STATS_SERVER_URL=http://stats-server:9090
+  # где stats-server имя сервиса статистики
+  url: http://localhost:9090
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:6542/ewm_db
+    username: postgres
+    password: 12345
+
+  sql:
+    init:
+      mode: always
+
