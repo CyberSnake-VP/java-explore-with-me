@@ -7,7 +7,7 @@ import ru.practicum.users.dto.UserDto;
 import ru.practicum.users.model.User;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class UserDtoMapper {
+public class UserMapper {
 
     public static UserDto mapToUserDto(final User user) {
         return UserDto.builder()
@@ -24,8 +24,8 @@ public class UserDtoMapper {
                 .build();
     }
 
-    public static UserDto mapToUserDto(final NewUserRequest newUserRequest) {
-        return UserDto.builder()
+    public static User mapToUser(final NewUserRequest newUserRequest) {
+        return User.builder()
                 .name(newUserRequest.getName())
                 .email(newUserRequest.getEmail())
                 .build();
