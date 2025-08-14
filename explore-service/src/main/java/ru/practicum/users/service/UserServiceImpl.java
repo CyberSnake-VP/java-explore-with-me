@@ -2,6 +2,7 @@ package ru.practicum.users.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.users.dto.NewUserRequest;
@@ -11,6 +12,7 @@ import ru.practicum.users.model.User;
 import ru.practicum.users.repository.UserRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -39,9 +41,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getUsers(List<Long> ids, Integer from, Integer size) {
-        log.info("Get users: {}, from={}, size={}", ids, from, size);
-        return List.of();
+    public List<UserDto> getUsers(List<Long> ids, Pageable pageable) {
+        log.info("Get users ids: {}, from={}, size={}", ids, pageable.getPageNumber(), pageable.getPageSize());
+        return userRepository.findAll(pageable).stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -53,6 +57,6 @@ public class UserServiceImpl implements UserService {
 
     private boolean checkEmailIsExisting(User user) {
         log.debug("user by email: {}", user.getEmail());
-        return userRepository.findByEmail(user);
+        return userRepository.findByEmail(user.getEmail()).isPresent();
     }
 }
