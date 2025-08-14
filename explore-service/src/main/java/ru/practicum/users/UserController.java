@@ -1,7 +1,7 @@
 package ru.practicum.users;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -32,8 +32,15 @@ public class UserController {
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<UserDto> getUsers(@RequestParam(name = "idx", required = false) List<Long> idx,
-                                  @RequestParam(name = "from", defaultValue = "0") @Min(0)Integer from,
+                                  @RequestParam(name = "from", defaultValue = "0") @Positive Integer from,
                                   @RequestParam(name = "size", defaultValue = "10") Integer size) {
         return userService.getUsers(idx, PageRequest.of(from, size));
     }
+
+    @DeleteMapping("/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable(value = "userId") @Positive Long userId) {
+         userService.deleteUser(userId);
+    }
+
 }
