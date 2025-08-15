@@ -34,4 +34,11 @@ public class EventController {
                                          @RequestParam(name = "size") Integer size) {
         return eventService.getEventsPrivate(userId, PageRequest.of(from, size));
     }
+
+    @GetMapping("/users/{userId}/events/{eventId}")
+    @ResponseStatus(HttpStatus.OK)
+    public EventFullDto getEvent(@PathVariable("userId") Long userId,
+                                 @PathVariable("eventId") Long eventId) {
+        return eventService.getEventPrivate(userId, eventId);
+    }
 }

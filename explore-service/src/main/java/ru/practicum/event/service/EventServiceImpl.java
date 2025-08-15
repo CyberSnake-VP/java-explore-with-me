@@ -75,6 +75,14 @@ public class EventServiceImpl implements EventService {
                .toList();
     }
 
+    @Override
+    public EventFullDto getEventPrivate(Long eventId, Long userId) {
+        log.info("Get event: {}, by user: {}", eventId, userId);
+
+        Event entity = eventRepository.findAllByInitiatorIdAndId(userId, eventId);
+
+        return EventMapper.mapToFullDto(entity, getEventHitView(entity));
+    }
 
 
     private boolean validateDate(NewEventDto event) {
@@ -93,6 +101,7 @@ public class EventServiceImpl implements EventService {
 
 
     private Long getEventHitView(Event event) {
+        // получим выборку в один год от текущей даты.
         LocalDateTime start = LocalDateTime.now().minusDays(365);
         LocalDateTime end = LocalDateTime.now();
         Long eventId = event.getId();

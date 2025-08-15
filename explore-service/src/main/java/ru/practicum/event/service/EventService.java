@@ -10,4 +10,5 @@ import java.util.List;
 public interface EventService {
     EventFullDto addEventPrivate(NewEventDto event, Long userId);
     List<EventShortDto> getEventsPrivate(Long userId, Pageable pageable);
+    EventFullDto getEventPrivate(Long eventId, Long userId);
 }
