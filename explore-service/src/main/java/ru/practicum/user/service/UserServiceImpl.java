@@ -1,4 +1,4 @@
-package ru.practicum.users.service;
+package ru.practicum.user.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -7,11 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
-import ru.practicum.users.dto.NewUserRequest;
-import ru.practicum.users.dto.UserDto;
-import ru.practicum.users.dto.mapper.UserMapper;
-import ru.practicum.users.model.User;
-import ru.practicum.users.repository.UserRepository;
+import ru.practicum.user.dto.NewUserRequest;
+import ru.practicum.user.dto.UserDto;
+import ru.practicum.user.dto.mapper.UserMapper;
+import ru.practicum.user.model.User;
+import ru.practicum.user.repository.UserRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public UserDto addUser(NewUserRequest user) {
+    public UserDto add(NewUserRequest user) {
         log.info("Add user: {}", user);
         User savedUser = UserMapper.mapToUser(user);
 
@@ -42,7 +42,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public List<UserDto> getUsers(List<Long> ids, Pageable pageable) {
+    public List<UserDto> get(List<Long> ids, Pageable pageable) {
         log.info("Get users ids: {}, from={}, size={}", ids, pageable.getPageNumber(), pageable.getPageSize());
         /** Если идентификаторы пользователей не указаны, тогда вернем всех пользователей с учетом ограничений.*/
         if (ids == null || ids.isEmpty()) {
@@ -57,7 +57,7 @@ public class UserServiceImpl implements UserService {
 
     @Transactional
     @Override
-    public void deleteUser(Long userId) {
+    public void delete(Long userId) {
         log.info("Delete user: {}", userId);
 
         if (userRepository.existsById(userId)) {

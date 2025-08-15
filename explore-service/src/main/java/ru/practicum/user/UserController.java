@@ -1,7 +1,6 @@
-package ru.practicum.users;
+package ru.practicum.user;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,9 +8,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.users.dto.NewUserRequest;
-import ru.practicum.users.dto.UserDto;
-import ru.practicum.users.service.UserService;
+import ru.practicum.user.dto.NewUserRequest;
+import ru.practicum.user.dto.UserDto;
+import ru.practicum.user.service.UserService;
 
 import java.util.List;
 
@@ -27,7 +26,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserDto addUser(@Valid @RequestBody final NewUserRequest user) {
         log.info("POST by add user: {}", user);
-        return userService.addUser(user);
+        return userService.add(user);
     }
 
     @GetMapping
@@ -35,13 +34,13 @@ public class UserController {
     public List<UserDto> getUsers(@RequestParam(name = "ids", required = false) List<Long> ids,
                                   @RequestParam(name = "from", defaultValue = "0") Integer from,
                                   @RequestParam(name = "size", defaultValue = "10") Integer size) {
-        return userService.getUsers(ids, PageRequest.of(from, size));
+        return userService.get(ids, PageRequest.of(from, size));
     }
 
     @DeleteMapping("/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable(value = "userId") @Positive Long userId) {
-         userService.deleteUser(userId);
+         userService.delete(userId);
     }
 
 }

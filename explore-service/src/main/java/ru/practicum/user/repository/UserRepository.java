@@ -1,8 +1,7 @@
-package ru.practicum.users.repository;
+package ru.practicum.user.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import ru.practicum.users.dto.UserDto;
-import ru.practicum.users.model.User;
+import ru.practicum.user.model.User;
 
 import java.util.List;
 import java.util.Optional;
