@@ -2,6 +2,7 @@ package ru.practicum.category.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.category.dto.CategoryDto;
@@ -11,6 +12,9 @@ import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -64,6 +68,26 @@ public class CategoryServiceImpl implements CategoryService {
             throw getNotFoundException(id);
         }
         return CategoryMapper.mapToDto(entity);
+    }
+
+    @Override
+    public CategoryDto get(Long id) {
+        log.info("Get category: {}", id);
+        Category entity = validateExistence(id);
+        if (entity != null) {
+            log.info("Category: {} is found", entity);
+            return CategoryMapper.mapToDto(entity);
+        } else {
+            throw getNotFoundException(id);
+        }
+    }
+
+    @Override
+    public List<CategoryDto> getAll(Pageable pageable) {
+        log.info("Get all categories: {}", pageable);
+        return categoryRepository.findAll(pageable).stream()
+                .map(CategoryMapper::mapToDto)
+                .toList();
     }
 
     private Category validateExistence(Long id) {
