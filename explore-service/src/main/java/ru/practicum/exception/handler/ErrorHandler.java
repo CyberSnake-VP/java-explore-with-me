@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.practicum.exception.DateValidationException;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
 
@@ -25,6 +26,18 @@ public class ErrorHandler {
         return ApiError.builder()
                 .status(HttpStatus.CONFLICT)
                 .reason("Integrity constraint has been violated.")
+                .message(e.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiError handleValidateForbidden(final DateValidationException e) {
+        log.warn(e.getMessage(), e);
+        return ApiError.builder()
+                .status(HttpStatus.FORBIDDEN)
+                .reason("For the requested operation the conditions are not met.")
                 .message(e.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
