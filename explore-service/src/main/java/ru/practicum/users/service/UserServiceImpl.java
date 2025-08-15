@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.exception.NotFoundException;
+import ru.practicum.exception.ValidationException;
 import ru.practicum.users.dto.NewUserRequest;
 import ru.practicum.users.dto.UserDto;
 import ru.practicum.users.dto.mapper.UserMapper;
@@ -30,9 +31,8 @@ public class UserServiceImpl implements UserService {
 
         if (checkEmailIsExisting(savedUser)) {
             log.info("User already exists with email: {}", user.getEmail());
-            throw new IllegalArgumentException(
-                    "Пользователь с email:" + user.getEmail() + " уже зарегистрирован!"
-            );
+            String message = "User already exists with email: " + user.getEmail();
+            throw new ValidationException(message);
         }
 
         savedUser = userRepository.save(savedUser);
@@ -44,24 +44,31 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserDto> getUsers(List<Long> ids, Pageable pageable) {
         log.info("Get users ids: {}, from={}, size={}", ids, pageable.getPageNumber(), pageable.getPageSize());
-        return userRepository.findAll(pageable).stream()
+        /** Если идентификаторы пользователей не указаны, тогда вернем всех пользователей с учетом ограничений.*/
+        if (ids == null || ids.isEmpty()) {
+            return userRepository.findAll(pageable).stream()
+                    .map(UserMapper::mapToUserDto)
+                    .collect(Collectors.toList());
+        }
+        return userRepository.findByIdIn(ids).stream()
                 .map(UserMapper::mapToUserDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
+    @Transactional
     @Override
-    public void deleteUser(Long id) {
-        log.info("Delete user: {}", id);
-        User user = userRepository.findById(id).orElse(null);
-        if (user != null) {
-            userRepository.delete(user);
+    public void deleteUser(Long userId) {
+        log.info("Delete user: {}", userId);
+
+        if (userRepository.existsById(userId)) {
+            log.info("User already exists with id: {} and deleted", userId);
+            userRepository.deleteById(userId);
         } else {
             String reason = "The required object was not found.";
-            String message = String.format("User with id=%d  was not found", id);
+            String message = String.format("User with id=%d  was not found", userId);
             throw new NotFoundException(message, reason);
         }
     }
-
 
 
     private boolean checkEmailIsExisting(User user) {
