@@ -21,7 +21,6 @@ import java.util.List;
 @Slf4j
 
 public class StatsClient extends BaseClient {
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final String API_PREFIX = "/";
     private final RestClient restClient = RestClient.builder()
             .requestFactory(new HttpComponentsClientHttpRequestFactory())
@@ -39,42 +38,21 @@ public class StatsClient extends BaseClient {
         );
     }
 
+    // метод для отправки запроса на отправки события в сервис статистики
     public EndpointHitDto addHit(EndpointHitDto endpointHitDto) {
         ParameterizedTypeReference<EndpointHitDto> responseType = new ParameterizedTypeReference<>() {
         };
         return post("/hit", endpointHitDto, responseType).getBody();
     }
 
-//    public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, boolean unique) {
-//        // проверим даты на валидность.
-//        validDates(start, end);
-//
-//        /** Используем reference<List<ViewStatsDto> чтобы запарсить ответ сразу в список объектов ViewStatsDto*/
-//        ParameterizedTypeReference<List<ViewStatsDto>> responseType = new ParameterizedTypeReference<>() {};
-//        Map<String, Object> params = new HashMap<>();
-//        params.put("start", start.format(DATE_TIME_FORMATTER));
-//        params.put("end", end.format(DATE_TIME_FORMATTER));
-//        params.put("unique", unique);
-//        String uriString;
-//        boolean isHasUri = !(Objects.isNull(uris) || uris.isEmpty());
-//
-//        /** Приходится использовать стрим, чтобы собрать одну строку из списка параметров uris
-//         * Дело в том, что для параметров используется map, но у нас тогда ключ будет uris, а значения должны быть разные.
-//         * Что не получится сделать.*/
-//        if (isHasUri) {
-//            uriString = uris.stream().map(uri -> "&uris=" + uri).collect(Collectors.joining());
-//                   return get("/stats?start={start}&end={end}" + uriString + "&unique={unique}", params, responseType).getBody();
-//        } else {
-//                   return get("/stats?start={start}&end={end}&unique={unique}", params, responseType).getBody();
-//        }
-//
-//    }
 
+    // метод для отправки запроса на получение статистики по событиям
     public List<ViewStatsDto> getStats(LocalDateTime start,
                                        LocalDateTime end,
                                        List<String> uris,
                                        Boolean unique) {
         try {
+            validDates(start, end);
             return restClient.get()
                     .uri(uriBuilder -> uriBuilder
                             .path("/stats")

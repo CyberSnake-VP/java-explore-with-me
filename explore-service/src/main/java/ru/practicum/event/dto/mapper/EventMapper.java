@@ -4,10 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.practicum.category.dto.mapper.CategoryMapper;
 import ru.practicum.category.model.Category;
-import ru.practicum.event.dto.EventFullDto;
-import ru.practicum.event.dto.Location;
-import ru.practicum.event.dto.NewEventDto;
-import ru.practicum.event.dto.State;
+import ru.practicum.event.dto.*;
 import ru.practicum.event.model.Event;
 import ru.practicum.user.dto.mapper.UserMapper;
 import ru.practicum.user.model.User;
@@ -53,6 +50,20 @@ public class EventMapper {
                 .publishedOn(event.getPublishedOn())
                 .requestModeration(event.getRequestModeration())
                 .state(event.getState())
+                .views(views == null ? 0 : views)
+                .build();
+    }
+
+    public static EventShortDto mapToShortDto (Event event, Long views) {
+        return EventShortDto.builder()
+                .id(event.getId())
+                .annotation(event.getAnnotation())
+                .category(CategoryMapper.mapToDto(event.getCategory()))
+                .initiator(UserMapper.mapToUserShortDto(event.getInitiator()))
+                .confirmedRequests(event.getConfirmedRequest())
+                .eventDate(event.getEventDate())
+                .paid(event.getPaid())
+                .title(event.getTitle())
                 .views(views == null ? 0 : views)
                 .build();
     }

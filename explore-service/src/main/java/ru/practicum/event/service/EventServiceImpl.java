@@ -2,11 +2,15 @@ package ru.practicum.event.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.StatsClient;
+import ru.practicum.ViewStatsDto;
 import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.event.dto.EventFullDto;
+import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.NewEventDto;
 import ru.practicum.event.dto.mapper.EventMapper;
 import ru.practicum.event.model.Event;
@@ -18,6 +22,9 @@ import ru.practicum.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -28,10 +35,11 @@ public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final StatsClient statsClient;
 
     @Transactional
     @Override
-    public EventFullDto addEvent(NewEventDto event, Long userId) {
+    public EventFullDto addEventPrivate(NewEventDto event, Long userId) {
         log.info("Add event: {}, by user: {}", event.getTitle(), userId);
 
         User user = userRepository.findById(userId).orElseThrow(() -> {
@@ -58,6 +66,17 @@ public class EventServiceImpl implements EventService {
         }
     }
 
+    @Override
+    public List<EventShortDto> getEventsPrivate(Long userId, Pageable pageable) {
+        log.info("Get all events by user: {}, pageable: {}", userId, pageable);
+
+        return eventRepository.findAllByInitiatorId(userId, pageable).stream()
+               .map(event -> EventMapper.mapToShortDto(event, getEventHitView(event)))
+               .toList();
+    }
+
+
+
     private boolean validateDate(NewEventDto event) {
         /** Событие не должно быть раньше, чем за два часа, от текущего времени.*/
         LocalDateTime afterTwoHour = LocalDateTime.now().plusHours(2);
@@ -72,4 +91,18 @@ public class EventServiceImpl implements EventService {
         return new DateValidationException(message);
     }
 
+
+    private Long getEventHitView(Event event) {
+        LocalDateTime start = LocalDateTime.now().minusDays(365);
+        LocalDateTime end = LocalDateTime.now();
+        Long eventId = event.getId();
+        List<String> uris = new ArrayList<>();
+        uris.add("/events/" + eventId);
+        List<ViewStatsDto> views = statsClient.getStats(start, end, uris, false);
+        Long view = 0L;
+        if(!views.isEmpty() ) {
+            return views.getFirst().getHits();
+        }
+        return view;
+    }
 }
