@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.EventFullDto;
 import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.dto.NewEventDto;
+import ru.practicum.event.dto.UpdateEventUserRequest;
 import ru.practicum.event.service.EventService;
 
 import java.util.List;
@@ -24,7 +25,7 @@ public class EventController {
     public EventFullDto addEvent(@PathVariable("userId") Long userId,
                                  @Valid @RequestBody NewEventDto event) {
         log.info("POST /users/{userId}/events/ userId={}, eventTitle={}", userId, event.getTitle());
-        return eventService.addEventPrivate(event, userId);
+        return eventService.addEventByUserIdPrivate(event, userId);
     }
 
     @GetMapping("/users/{userId}/events")
@@ -32,13 +33,21 @@ public class EventController {
     public List<EventShortDto> getEvents(@PathVariable("userId") Long userId,
                                          @RequestParam(name = "from") Integer from,
                                          @RequestParam(name = "size") Integer size) {
-        return eventService.getEventsPrivate(userId, PageRequest.of(from, size));
+        return eventService.getEventsByUserIdPrivate(userId, PageRequest.of(from, size));
     }
 
     @GetMapping("/users/{userId}/events/{eventId}")
     @ResponseStatus(HttpStatus.OK)
     public EventFullDto getEvent(@PathVariable("userId") Long userId,
                                  @PathVariable("eventId") Long eventId) {
-        return eventService.getEventPrivate(userId, eventId);
+        return eventService.getEventByUserIdPrivate(userId, eventId);
+    }
+
+    @PatchMapping("/users/{userId}/events/{eventId}")
+    @ResponseStatus(HttpStatus.OK)
+    public EventFullDto updateEventPrivate(@RequestBody @Valid UpdateEventUserRequest event,
+                                           @PathVariable("userId") Long userId,
+                                           @PathVariable("eventId") Long eventId) {
+        return eventService.updateEventByUserIdPrivate(event, userId, eventId);
     }
 }
