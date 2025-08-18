@@ -1,17 +1,16 @@
-package ru.practicum.event;
+package ru.practicum.event.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.event.dto.EventFullDto;
-import ru.practicum.event.dto.EventShortDto;
-import ru.practicum.event.dto.NewEventDto;
-import ru.practicum.event.dto.UpdateEventUserRequest;
+import ru.practicum.event.dto.*;
 import ru.practicum.event.service.EventService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -49,5 +48,26 @@ public class EventController {
                                            @PathVariable("userId") Long userId,
                                            @PathVariable("eventId") Long eventId) {
         return eventService.updateEventByUserIdPrivate(event, userId, eventId);
+    }
+
+    @GetMapping("/admin/events")
+    public List<EventFullDto> getEventsByAdmin(@RequestParam(value = "users", required = false) List<Long> userIds,
+                                               @RequestParam(value = "states", required = false) List<String> states,
+                                               @RequestParam(value = "categories", required = false) List<Long> categoriesIds,
+                                               @RequestParam(value = "rangeStart", required = false)
+                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeStart,
+                                               @RequestParam(value = "rangeEnd", required = false)
+                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
+                                               @RequestParam(value = "from", defaultValue = "0") Integer from,
+                                               @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        return eventService.getEventsByAdmin(GetEventRequest.of(
+                userIds,
+                states,
+                categoriesIds,
+                rangeStart,
+                rangeEnd,
+                from,
+                size)
+        );
     }
 }

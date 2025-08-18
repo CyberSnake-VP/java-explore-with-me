@@ -1,8 +1,13 @@
 package ru.practicum.event.service;
 
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.StatsClient;
@@ -12,6 +17,7 @@ import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.event.dto.*;
 import ru.practicum.event.dto.mapper.EventMapper;
 import ru.practicum.event.model.Event;
+import ru.practicum.event.model.QEvent;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.exception.DateValidationException;
 import ru.practicum.exception.NotFoundException;
@@ -95,8 +101,7 @@ public class EventServiceImpl implements EventService {
             throw  new UpdateEventException("Event must not be published");
         }
         /** Немного не понял этот момент, при добавлении event, у него будет статус pending(ожидание), а при обновлении
-         * можно обновлять только не опубликованные, т.е. не подтвержденные события, получается send_to_review тут как
-         * то не клеется, ведь при создании события статус pending, поменять статус на canceled имеет смысл,
+         * можно обновлять только не опубликованные, т.е. не подтвержденные события, можно поменять статус на canceled,
          * а sendToReview нужен если событие отменено и пользователь снова бросает его в ожидание?*/
         if(event.getStateAction() != null) {
             switch (event.getStateAction()) {
@@ -148,6 +153,49 @@ public class EventServiceImpl implements EventService {
         return EventMapper.mapToFullDto(eventRepository.save(entity), getEventHitView(entity));
     }
 
+    @Override
+    public List<EventFullDto> getEventsByAdmin(GetEventRequest req) {
+        log.info("Get events by admin: {}", req);
+        // Для поиска ссылок используем QueryDSL чтобы было удобно настраивать разные варианты фильтров
+        QEvent event = QEvent.event;
+        // Мы будем анализировать какие фильтры указал пользователь
+        // И все нужные условия фильтрации будем собирать в список
+        List<BooleanExpression> conditions = new ArrayList<>();
+        if(req.getUserIds() != null) {
+            conditions.add(event.id.in(req.getUserIds()));
+        }
+        if(req.getStates() != null) {
+            conditions.add(event.state.in(req.getStates()));
+        }
+        if(req.getCategoryIds() != null) {
+            conditions.add(event.category.id.in(req.getCategoryIds()));
+        }
+        if(req.getRangeStart() != null) {
+            conditions.add(event.eventDate.after(req.getRangeStart()));
+        }
+        if(req.getRangeEnd() != null) {
+            conditions.add(event.eventDate.before(req.getRangeEnd()));
+        }
+
+        // из всех подготовленных условий, составляем единое условие
+        BooleanExpression finalCondition = conditions.stream()
+                .reduce(BooleanExpression::and)
+                .orElse(Expressions.TRUE);
+
+        // решил использовать сортировку по полю id события
+        Sort sort = Sort.by( "id");
+        PageRequest pageRequest = PageRequest.of(req.getFrom(), req.getSize(), sort);
+
+        log.info("Get events by user: {}, page: {}", req.getUserIds(), pageRequest);
+        List<Event> events = eventRepository.findAll(finalCondition, pageRequest).getContent();
+
+        log.info("Found {} events", events.size());
+        // получаем список событий с количеством просмотров, я выбрал период год в методе getEventHitView
+        return events.stream()
+                .map(e -> EventMapper.mapToFullDto(e, getEventHitView(e)))
+                .toList();
+    }
+
 
     private boolean validateDate(NewEventDto event) {
         /** Событие не должно быть раньше, чем за два часа, от текущего времени.*/
@@ -175,7 +223,8 @@ public class EventServiceImpl implements EventService {
         return new NotFoundException(message, reason);
     }
 
-
+    // Метод для получения кол-ва просмотров из сервиса статистики.
+    // Не понятно за какой период получать статистику, указал за 365 дней.
     private Long getEventHitView(Event event) {
         // получим выборку в один год от текущей даты.
         LocalDateTime start = LocalDateTime.now().minusDays(365);
