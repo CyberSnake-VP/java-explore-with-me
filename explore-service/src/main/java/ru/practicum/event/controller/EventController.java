@@ -21,7 +21,7 @@ public class EventController {
 
     @PostMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.CREATED)
-    public EventFullDto addEvent(@PathVariable("userId") Long userId,
+    public EventFullDto addEventUserPrivate(@PathVariable("userId") Long userId,
                                  @Valid @RequestBody NewEventDto event) {
         log.info("POST /users/{userId}/events/ userId={}, eventTitle={}", userId, event.getTitle());
         return eventService.addEventByUserIdPrivate(event, userId);
@@ -29,7 +29,7 @@ public class EventController {
 
     @GetMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.OK)
-    public List<EventShortDto> getEvents(@PathVariable("userId") Long userId,
+    public List<EventShortDto> getEventsUserPrivate(@PathVariable("userId") Long userId,
                                          @RequestParam(name = "from") Integer from,
                                          @RequestParam(name = "size") Integer size) {
         log.info("GET /users/{}/events/ from={}, size={}", userId, from, size);
@@ -38,7 +38,7 @@ public class EventController {
 
     @GetMapping("/users/{userId}/events/{eventId}")
     @ResponseStatus(HttpStatus.OK)
-    public EventFullDto getEvent(@PathVariable("userId") Long userId,
+    public EventFullDto getEventUserPrivate(@PathVariable("userId") Long userId,
                                  @PathVariable("eventId") Long eventId) {
         log.info("GET /users/{}/events/{}", userId, eventId);
         return eventService.getEventByUserIdPrivate(userId, eventId);
@@ -46,9 +46,9 @@ public class EventController {
 
     @PatchMapping("/users/{userId}/events/{eventId}")
     @ResponseStatus(HttpStatus.OK)
-    public EventFullDto updateEventPrivate(@RequestBody @Valid UpdateEventUserRequest event,
-                                           @PathVariable("userId") Long userId,
-                                           @PathVariable("eventId") Long eventId) {
+    public EventFullDto updateEventUserPrivate(@RequestBody @Valid UpdateEventUserRequest event,
+                                               @PathVariable("userId") Long userId,
+                                               @PathVariable("eventId") Long eventId) {
         log.info("PATCH /users/{}/events/{}, event title:{}, id{}", userId, eventId, event.getTitle(), eventId);
         return eventService.updateEventByUserIdPrivate(event, userId, eventId);
     }
