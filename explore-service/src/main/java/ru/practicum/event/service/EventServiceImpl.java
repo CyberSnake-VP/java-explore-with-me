@@ -1,6 +1,5 @@
 package ru.practicum.event.service;
 
-import com.querydsl.core.types.Expression;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +59,7 @@ public class EventServiceImpl implements EventService {
         });
 
         /** Проверяем даты на валидность, выбрасываем исключение, если проверка не прошла.*/
-        if(validateDate(event)) {
+        if (validateDate(event)) {
             Event entity = EventMapper.mapToEntity(event, user, category);
             entity = eventRepository.save(entity);
             log.info("Saved event: с id {}, title {}", entity.getId(), entity.getTitle());
@@ -76,8 +75,8 @@ public class EventServiceImpl implements EventService {
         log.info("Get all events by user: {}, pageable: {}", userId, pageable);
 
         return eventRepository.findAllByInitiatorId(userId, pageable).stream()
-               .map(event -> EventMapper.mapToShortDto(event, getEventHitView(event)))
-               .toList();
+                .map(event -> EventMapper.mapToShortDto(event, getEventHitView(event)))
+                .toList();
     }
 
     @Override
@@ -94,57 +93,63 @@ public class EventServiceImpl implements EventService {
         log.info("Update event: {}, by user: {}", eventId, userId);
 
         Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId);
-        if(entity == null) {
-            throw  getNotFoundException(eventId);
+        if (entity == null) {
+            throw getNotFoundException(eventId);
         }
-        if(entity.getState().equals(State.PUBLISHED)) {
-            throw  new UpdateEventException("Event must not be published");
+        if (entity.getState().equals(State.PUBLISHED)) {
+            throw new UpdateEventException("Event must not be published");
         }
         /** Немного не понял этот момент, при добавлении event, у него будет статус pending(ожидание), а при обновлении
          * можно обновлять только не опубликованные, т.е. не подтвержденные события, можно поменять статус на canceled,
          * а sendToReview нужен если событие отменено и пользователь снова бросает его в ожидание?*/
-        if(event.getStateAction() != null) {
+        if (event.getStateAction() != null) {
             switch (event.getStateAction()) {
                 case SEND_TO_REVIEW -> entity.setState(State.PENDING);
                 case CANCEL_REVIEW -> entity.setState(State.CANCELED);
                 default -> throw new UpdateEventStatusException("Only pending or canceled events can be changed");
             }
         }
-        if(event.getAnnotation() != null) {
+        if (event.getAnnotation() != null) {
             entity.setAnnotation(event.getAnnotation());
         }
-        if(event.getCategory() != null) {
-            entity.setCategory(categoryRepository.findById(event.getCategory()).orElseThrow());
+        /** Тут проверяем категорию, если ее нужно заменить, проверяем на корректность.
+         * Категория обязательна, если она указана не верно, не стоит ее менять.*/
+        if (event.getCategory() != null) {
+            entity.setCategory(categoryRepository.findById(event.getCategory()).orElseThrow(() -> {
+                        String reason = "The required object was not found.";
+                        String message = String.format("Category with id=%d was not found", event.getCategory());
+                        return new NotFoundException(message, reason);
+                    }));
         }
-        if(event.getDescription() != null) {
+        if (event.getDescription() != null) {
             entity.setDescription(event.getDescription());
         }
-        if(event.getEventDate() != null) {
-            if(validateDate(event)) {
+        if (event.getEventDate() != null) {
+            if (validateDate(event)) {
                 entity.setEventDate(event.getEventDate());
             } else {
                 throw getDateValidationException(event.getEventDate());
             }
         }
-        if(event.getLocation() != null) {
+        if (event.getLocation() != null) {
             Location location = event.getLocation();
-           if(location.getLat() != null) {
-               entity.setLat(location.getLat());
-           }
-           if(location.getLon() != null) {
-               entity.setLon(location.getLon());
-           }
+            if (location.getLat() != null) {
+                entity.setLat(location.getLat());
+            }
+            if (location.getLon() != null) {
+                entity.setLon(location.getLon());
+            }
         }
-        if(event.getPaid() != null) {
+        if (event.getPaid() != null) {
             entity.setPaid(event.getPaid());
         }
-        if(event.getParticipantLimit() != null) {
+        if (event.getParticipantLimit() != null) {
             entity.setParticipantLimit(event.getParticipantLimit());
         }
-        if(event.getRequestModeration() != null) {
+        if (event.getRequestModeration() != null) {
             entity.setRequestModeration(event.getRequestModeration());
         }
-        if(event.getTitle() != null) {
+        if (event.getTitle() != null) {
             entity.setTitle(event.getTitle());
         }
 
@@ -161,19 +166,19 @@ public class EventServiceImpl implements EventService {
         // Мы будем анализировать какие фильтры указал пользователь
         // И все нужные условия фильтрации будем собирать в список
         List<BooleanExpression> conditions = new ArrayList<>();
-        if(req.getUserIds() != null) {
+        if (req.getUserIds() != null) {
             conditions.add(event.id.in(req.getUserIds()));
         }
-        if(req.getStates() != null) {
+        if (req.getStates() != null) {
             conditions.add(event.state.in(req.getStates()));
         }
-        if(req.getCategoryIds() != null) {
+        if (req.getCategoryIds() != null) {
             conditions.add(event.category.id.in(req.getCategoryIds()));
         }
-        if(req.getRangeStart() != null) {
+        if (req.getRangeStart() != null) {
             conditions.add(event.eventDate.after(req.getRangeStart()));
         }
-        if(req.getRangeEnd() != null) {
+        if (req.getRangeEnd() != null) {
             conditions.add(event.eventDate.before(req.getRangeEnd()));
         }
 
@@ -183,7 +188,7 @@ public class EventServiceImpl implements EventService {
                 .orElse(Expressions.TRUE);
 
         // решил использовать сортировку по полю id события
-        Sort sort = Sort.by( "id");
+        Sort sort = Sort.by("id");
         PageRequest pageRequest = PageRequest.of(req.getFrom(), req.getSize(), sort);
 
         log.info("Get events by user: {}, page: {}", req.getUserIds(), pageRequest);
@@ -196,19 +201,103 @@ public class EventServiceImpl implements EventService {
                 .toList();
     }
 
+    @Override
+    public EventFullDto updateEventByAdmin(UpdateEventAdminRequest event, Long eventId) {
+        log.info("Update event: {}, c ID: {}", event.getTitle(), eventId);
+        Event entity = eventRepository.findById(eventId).orElseThrow(() -> getNotFoundException(eventId));
+        if (event.getAnnotation() != null) {
+            entity.setAnnotation(event.getAnnotation());
+        }
+        if (event.getCategory() != null) {
+            entity.setCategory(categoryRepository.findById(event.getCategory()).orElseThrow(() -> {
+                String reason = "The required object was not found.";
+                String message = String.format("Category with id=%d was not found", event.getCategory());
+                return new NotFoundException(message, reason);
+            }));
+        }
+        if (event.getDescription() != null) {
+            entity.setDescription(event.getDescription());
+        }
+        if (event.getEventDate() != null) {
+            if (validateDateUpdateAdmin(event, entity)) {
+                entity.setEventDate(event.getEventDate());
+            } else {
+                throw getDateValidationException(event.getEventDate());
+            }
+        }
+        if (event.getPaid() != null) {
+            entity.setPaid(event.getPaid());
+        }
+        if (event.getParticipantLimit() != null) {
+            entity.setParticipantLimit(event.getParticipantLimit());
+        }
+        if (event.getRequestModeration() != null) {
+            entity.setRequestModeration(event.getRequestModeration());
+        }
+        if (event.getTitle() != null) {
+            entity.setTitle(event.getTitle());
+        }
+        if (event.getStateAction() != null) {
+            Location location = event.getLocation();
+            if (location.getLat() != null) {
+                entity.setLat(location.getLat());
+            }
+            if (location.getLon() != null) {
+                entity.setLon(location.getLon());
+            }
+        }
+        log.info("Updated event by Admin with id {}", entity.getId());
+        /** Cобытие можно публиковать, только если оно в состоянии ожидания публикации (Ожидается код ошибки 409)
+         событие можно отклонить, только если оно еще не опубликовано (Ожидается код ошибки 409)*/
+        if(event.getStateAction() != null) {
+            switch (event.getStateAction()) {
+                case PUBLISH_EVENT -> {
+                    if(entity.getState() == State.PENDING) {
+                        entity.setState(State.PUBLISHED);
+                    } else {
+                       throw getUpdateEventStatusException(entity.getState());
+                    }
+                }
+                case REJECT_EVENT -> {
+                    if(entity.getState() == State.PENDING) {
+                        entity.setState(State.CANCELED);
+                    } else {
+                        throw getUpdateEventStatusException(entity.getState());
+                    }
+                }
+            }
+        }
 
-    private boolean validateDate(NewEventDto event) {
-        /** Событие не должно быть раньше, чем за два часа, от текущего времени.*/
-        LocalDateTime afterTwoHour = LocalDateTime.now().plusHours(2);
-        return event.getEventDate().isAfter(afterTwoHour);
+        return EventMapper.mapToFullDto(eventRepository.save(entity), getEventHitView(entity));
     }
 
-    private boolean validateDate(UpdateEventUserRequest event) {
+
+    // сделал универсальный метод для получения валидации для разных объектов dto
+    private <T> boolean validateDate(T event) {
         LocalDateTime afterTwoHour = LocalDateTime.now().plusHours(2);
-        return event.getEventDate().isAfter(afterTwoHour);
+
+        if (event.getClass().equals(UpdateEventUserRequest.class)) {
+            return ((UpdateEventUserRequest) event).getEventDate().isAfter(afterTwoHour);
+        }
+        if (event.getClass().equals(NewEventDto.class)) {
+            return ((NewEventDto) event).getEventDate().isAfter(afterTwoHour);
+        }
+        return false;
     }
 
-    /** Для удобства вынес подготовку исключения в отдельные методы.*/
+    private boolean validateDateUpdateAdmin(UpdateEventAdminRequest event, Event enitiy) {
+        // дата публикации
+        LocalDateTime publishedOn = enitiy.getPublishedOn();
+        // дата изменяемого события
+        LocalDateTime eventDate = event.getEventDate();
+        /** Дата начала изменяемого события должна быть не ранее чем за час от даты публикации*/
+        return publishedOn.plusHours(1).isBefore(eventDate);
+
+    }
+
+    /**
+     * Для удобства вынес подготовку исключения в отдельные методы.
+     */
     private DateValidationException getDateValidationException(LocalDateTime eventDate) {
         log.info("Event date is after two hours: {}", eventDate);
         String message = String.format("Field: eventDate. Error: должно содержать дату, которая еще не наступила. " +
@@ -223,6 +312,13 @@ public class EventServiceImpl implements EventService {
         return new NotFoundException(message, reason);
     }
 
+    private UpdateEventStatusException getUpdateEventStatusException(State action) {
+        log.info("Update status failed: {}", action);
+        String message = String.format("Cannot publish the event because it's not in the right state: %s",
+                action);
+        return new UpdateEventStatusException(message);
+    }
+
     // Метод для получения кол-ва просмотров из сервиса статистики.
     // Не понятно за какой период получать статистику, указал за 365 дней.
     private Long getEventHitView(Event event) {
@@ -234,7 +330,7 @@ public class EventServiceImpl implements EventService {
         uris.add("/events/" + eventId);
         List<ViewStatsDto> views = statsClient.getStats(start, end, uris, false);
         Long view = 0L;
-        if(!views.isEmpty() ) {
+        if (!views.isEmpty()) {
             return views.getFirst().getHits();
         }
         return view;

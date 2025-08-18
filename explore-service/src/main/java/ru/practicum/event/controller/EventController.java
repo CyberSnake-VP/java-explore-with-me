@@ -32,6 +32,7 @@ public class EventController {
     public List<EventShortDto> getEvents(@PathVariable("userId") Long userId,
                                          @RequestParam(name = "from") Integer from,
                                          @RequestParam(name = "size") Integer size) {
+        log.info("GET /users/{}/events/ from={}, size={}", userId, from, size);
         return eventService.getEventsByUserIdPrivate(userId, PageRequest.of(from, size));
     }
 
@@ -39,6 +40,7 @@ public class EventController {
     @ResponseStatus(HttpStatus.OK)
     public EventFullDto getEvent(@PathVariable("userId") Long userId,
                                  @PathVariable("eventId") Long eventId) {
+        log.info("GET /users/{}/events/{}", userId, eventId);
         return eventService.getEventByUserIdPrivate(userId, eventId);
     }
 
@@ -47,10 +49,12 @@ public class EventController {
     public EventFullDto updateEventPrivate(@RequestBody @Valid UpdateEventUserRequest event,
                                            @PathVariable("userId") Long userId,
                                            @PathVariable("eventId") Long eventId) {
+        log.info("PATCH /users/{}/events/{}, event title:{}, id{}", userId, eventId, event.getTitle(), eventId);
         return eventService.updateEventByUserIdPrivate(event, userId, eventId);
     }
 
     @GetMapping("/admin/events")
+    @ResponseStatus(HttpStatus.OK)
     public List<EventFullDto> getEventsByAdmin(@RequestParam(value = "users", required = false) List<Long> userIds,
                                                @RequestParam(value = "states", required = false) List<String> states,
                                                @RequestParam(value = "categories", required = false) List<Long> categoriesIds,
@@ -60,6 +64,8 @@ public class EventController {
                                                @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime rangeEnd,
                                                @RequestParam(value = "from", defaultValue = "0") Integer from,
                                                @RequestParam(value = "size", defaultValue = "10") Integer size) {
+        log.info("GET /admin/events/ userIds={}, states={}, categoriesIds={}, rangeStart={}, rangeEnd={}, from={}, size={}",
+                userIds, states, categoriesIds, rangeStart, rangeEnd, from, size);
         return eventService.getEventsByAdmin(GetEventRequest.of(
                 userIds,
                 states,
@@ -70,4 +76,12 @@ public class EventController {
                 size)
         );
     }
+
+    @PatchMapping("/admin/events/{eventId}")
+    @ResponseStatus(HttpStatus.OK)
+    public EventFullDto updateEventsByAdmin(@RequestBody @Valid UpdateEventAdminRequest event,
+                                            @PathVariable("eventId") Long eventId) {
+        return eventService.updateEventByAdmin(event, eventId);
+    }
+
 }
