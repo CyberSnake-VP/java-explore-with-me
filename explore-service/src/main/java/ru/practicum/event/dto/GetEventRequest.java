@@ -9,39 +9,51 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 public class GetEventRequest {
-    private List<Long> userIds;
-    private List<State> states;
-    private List<Long> categoryIds;
+    private String text;
+    private List<Long> categoriesIds;
+    private Boolean paid;
     private LocalDateTime rangeStart;
     private LocalDateTime rangeEnd;
-    private Integer from;
-    private Integer size;
+    private Boolean onlyAvailable;
+    private Sort sort;
+    public Integer from;
+    public Integer size;
 
-    public static GetEventRequest of(final List<Long> userIds,
-                                     final List<String> states,
-                                     final List<Long> categoryIds,
+    public static GetEventRequest of(final String text,
+                                     final List<Long> categoriesIds,
+                                     final Boolean paid,
                                      final LocalDateTime rangeStart,
                                      final LocalDateTime rangeEnd,
+                                     final Boolean onlyAvailable,
+                                     final String sort,
                                      final Integer from,
                                      final Integer size) {
-        GetEventRequest request = new GetEventRequest();
-        if(userIds != null) {
-            request.setUserIds(userIds);
+        GetEventRequest req = new GetEventRequest();
+        if(text != null) {
+            req.setText(text);
         }
-        if(states != null) {
-            request.setStates(states.stream().map(State::valueOf).toList());
+        if(categoriesIds != null) {
+            req.setCategoriesIds(categoriesIds);
         }
-        if(categoryIds != null) {
-            request.setCategoryIds(categoryIds);
+        if(paid != null) {
+            req.setPaid(paid);
         }
         if(rangeStart != null) {
-            request.setRangeStart(rangeStart);
+            req.setRangeStart(rangeStart);
         }
         if(rangeEnd != null) {
-            request.setRangeEnd(rangeEnd);
+            req.setRangeEnd(rangeEnd);
         }
-        request.setFrom(from);
-        request.setSize(size);
-        return request;
+        if(onlyAvailable != null) {
+            req.setOnlyAvailable(onlyAvailable);
+        }
+        if(sort != null) {
+            req.setSort(Sort.valueOf(sort));
+        }
+        req.setFrom(from);
+        req.setSize(size);
+        return req;
     }
+
+    public enum Sort {EVENT_DATE, VIEWS}
 }

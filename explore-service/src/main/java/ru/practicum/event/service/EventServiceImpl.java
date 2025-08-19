@@ -2,6 +2,7 @@ package ru.practicum.event.service;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -43,7 +44,7 @@ public class EventServiceImpl implements EventService {
 
     @Transactional
     @Override
-    public EventFullDto addEventByUserIdPrivate(NewEventDto event, Long userId) {
+    public EventFullDto addEventByUserPrivate(NewEventDto event, Long userId) {
         log.info("Add event: {}, by user: {}", event.getTitle(), userId);
 
         User user = userRepository.findById(userId).orElseThrow(() -> {
@@ -71,7 +72,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDto> getEventsByUserIdPrivate(Long userId, Pageable pageable) {
+    public List<EventShortDto> getEventsByUserPrivate(Long userId, Pageable pageable) {
         log.info("Get all events by user: {}, pageable: {}", userId, pageable);
 
         return eventRepository.findAllByInitiatorId(userId, pageable).stream()
@@ -80,7 +81,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventFullDto getEventByUserIdPrivate(Long eventId, Long userId) {
+    public EventFullDto getEventByUserPrivate(Long eventId, Long userId) {
         log.info("Get event: {}, by user: {}", eventId, userId);
 
         Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId);
@@ -89,7 +90,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventFullDto updateEventByUserIdPrivate(UpdateEventUserRequest event, Long userId, Long eventId) {
+    public EventFullDto updateEventByUserPrivate(UpdateEventUserRequest event, Long userId, Long eventId) {
         log.info("Update event: {}, by user: {}", eventId, userId);
 
         Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId);
@@ -116,10 +117,10 @@ public class EventServiceImpl implements EventService {
          * Категория обязательна, если она указана не верно, не стоит ее менять.*/
         if (event.getCategory() != null) {
             entity.setCategory(categoryRepository.findById(event.getCategory()).orElseThrow(() -> {
-                        String reason = "The required object was not found.";
-                        String message = String.format("Category with id=%d was not found", event.getCategory());
-                        return new NotFoundException(message, reason);
-                    }));
+                String reason = "The required object was not found.";
+                String message = String.format("Category with id=%d was not found", event.getCategory());
+                return new NotFoundException(message, reason);
+            }));
         }
         if (event.getDescription() != null) {
             entity.setDescription(event.getDescription());
@@ -159,7 +160,7 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventFullDto> getEventsByAdmin(GetEventRequest req) {
+    public List<EventFullDto> getEventsByAdmin(GetEventAdminRequest req) {
         log.info("Get events by admin: {}", req);
         // Для поиска ссылок используем QueryDSL чтобы было удобно настраивать разные варианты фильтров
         QEvent event = QEvent.event;
@@ -200,10 +201,10 @@ public class EventServiceImpl implements EventService {
                 .map(e -> EventMapper.mapToFullDto(e, getEventHitView(e)))
                 .toList();
     }
-
+    @Transactional
     @Override
     public EventFullDto updateEventByAdmin(UpdateEventAdminRequest event, Long eventId) {
-        log.info("Update event: {}, c ID: {}", event.getTitle(), eventId);
+        log.info("Update event: c ID: {}", eventId);
         Event entity = eventRepository.findById(eventId).orElseThrow(() -> getNotFoundException(eventId));
         if (event.getAnnotation() != null) {
             entity.setAnnotation(event.getAnnotation());
@@ -237,7 +238,7 @@ public class EventServiceImpl implements EventService {
         if (event.getTitle() != null) {
             entity.setTitle(event.getTitle());
         }
-        if (event.getStateAction() != null) {
+        if (event.getLocation() != null) {
             Location location = event.getLocation();
             if (location.getLat() != null) {
                 entity.setLat(location.getLat());
@@ -249,17 +250,17 @@ public class EventServiceImpl implements EventService {
         log.info("Updated event by Admin with id {}", entity.getId());
         /** Cобытие можно публиковать, только если оно в состоянии ожидания публикации (Ожидается код ошибки 409)
          событие можно отклонить, только если оно еще не опубликовано (Ожидается код ошибки 409)*/
-        if(event.getStateAction() != null) {
+        if (event.getStateAction() != null) {
             switch (event.getStateAction()) {
                 case PUBLISH_EVENT -> {
-                    if(entity.getState() == State.PENDING) {
+                    if (entity.getState().equals(State.PENDING)) {
                         entity.setState(State.PUBLISHED);
                     } else {
-                       throw getUpdateEventStatusException(entity.getState());
+                        throw getUpdateEventStatusException(entity.getState());
                     }
                 }
                 case REJECT_EVENT -> {
-                    if(entity.getState() == State.PENDING) {
+                    if (entity.getState().equals(State.PENDING)) {
                         entity.setState(State.CANCELED);
                     } else {
                         throw getUpdateEventStatusException(entity.getState());
@@ -271,6 +272,64 @@ public class EventServiceImpl implements EventService {
         return EventMapper.mapToFullDto(eventRepository.save(entity), getEventHitView(entity));
     }
 
+    @Override
+    public List<EventShortDto> getEvents(GetEventRequest req, HttpServletRequest httpServletRequest) {
+        log.info("Get events by admin: {}", req);
+
+        // Так же для формирования запросов по фильтрам используем QueryDSL, все фильтры складываем в список Expression
+        QEvent event = QEvent.event;
+        List<BooleanExpression> conditions = new ArrayList<>();
+
+        // раз метод публичный, получаем только опубликованные события
+        conditions.add(event.state.eq(State.PUBLISHED));
+
+        if (req.getText() != null) {
+            conditions.add(event.annotation.containsIgnoreCase(req.getText())
+                    .or(event.description.containsIgnoreCase(req.getText())));
+        }
+        if (req.getCategoriesIds() != null) {
+            conditions.add(event.category.id.in(req.getCategoriesIds()));
+        }
+        if (req.getPaid() != null) {
+            conditions.add(event.paid.eq(req.getPaid()));
+        }
+        if (req.getRangeStart() != null) {
+            conditions.add(event.eventDate.after(req.getRangeStart()));
+        }
+        if (req.getRangeEnd() != null) {
+            conditions.add(event.eventDate.before(req.getRangeEnd()));
+        }
+        if (req.getOnlyAvailable()) {
+            conditions.add(event.confirmedRequest.lt(event.participantLimit));
+        }
+
+        // из всех подготовленных условий, составляем единое условие
+        BooleanExpression request = conditions.stream()
+                .reduce(BooleanExpression::and)
+                .orElse(Expressions.TRUE);
+
+        Sort sort = Sort.by("id");
+        if(req.getSort() != null) {
+             sort = makeOrderBySort(req.getSort());
+        }
+        PageRequest pageRequest = PageRequest.of(req.getFrom(), req.getSize(), sort);
+
+        log.info("Get events page: {}", pageRequest);
+        List<Event> events = eventRepository.findAll(request, pageRequest).getContent();
+
+        log.info("Found events, size:{}", events.size());
+        return events.stream()
+                .map(e -> EventMapper.mapToShortDto(e, getEventHitView(e)))
+                .toList();
+    }
+
+    // метод будет возвращать нужный вид сортировки.
+    private Sort makeOrderBySort(GetEventRequest.Sort sort) {
+        return switch (sort) {
+            case EVENT_DATE -> Sort.by("eventDate");
+            case VIEWS -> Sort.by("views");
+        };
+    }
 
     // сделал универсальный метод для получения валидации для разных объектов dto
     private <T> boolean validateDate(T event) {
