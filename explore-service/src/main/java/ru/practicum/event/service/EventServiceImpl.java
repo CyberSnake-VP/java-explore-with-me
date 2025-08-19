@@ -283,6 +283,7 @@ public class EventServiceImpl implements EventService {
         // раз метод публичный, получаем только опубликованные события
         conditions.add(event.state.eq(State.PUBLISHED));
 
+        // ищем текст в аннотации и подробном описании, без учета регистра
         if (req.getText() != null) {
             conditions.add(event.annotation.containsIgnoreCase(req.getText())
                     .or(event.description.containsIgnoreCase(req.getText())));
@@ -303,7 +304,8 @@ public class EventServiceImpl implements EventService {
             conditions.add(event.confirmedRequest.lt(event.participantLimit));
         }
 
-        // из всех подготовленных условий, составляем единое условие
+        // из всех подготовленных условий, составляем единое условие. Если ни одного фильтра не получили, используем
+        // Expressions.TRUE, устанавливаем значение true,  предикат не может быть пустым.
         BooleanExpression request = conditions.stream()
                 .reduce(BooleanExpression::and)
                 .orElse(Expressions.TRUE);
@@ -321,6 +323,15 @@ public class EventServiceImpl implements EventService {
         return events.stream()
                 .map(e -> EventMapper.mapToShortDto(e, getEventHitView(e)))
                 .toList();
+    }
+
+    @Override
+    public EventFullDto getEvent(Long eventId, HttpServletRequest httpServletRequest) {
+        log.info("Get event: {}", eventId);
+        Event entity = eventRepository.findByIdAndState(eventId, State.PUBLISHED)
+                .orElseThrow(() -> getNotFoundException(eventId));
+        log.info("event: {}", entity);
+        return EventMapper.mapToFullDto(entity, getEventHitView(entity));
     }
 
     // метод будет возвращать нужный вид сортировки.

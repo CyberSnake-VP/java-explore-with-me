@@ -102,17 +102,23 @@ public class EventController {
         log.info("GET /events: text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categoriesIds, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
         return eventService.getEvents(GetEventRequest.of(
-                text,
-                categoriesIds,
-                paid,
-                rangeStart,
-                rangeEnd,
-                onlyAvailable,
-                sort,
-                from,
-                size),
+                        text,
+                        categoriesIds,
+                        paid,
+                        rangeStart,
+                        rangeEnd,
+                        onlyAvailable,
+                        sort,
+                        from,
+                        size),
                 httpServletRequest
         );
     }
 
+    @GetMapping("events/{eventId}")
+    @ResponseStatus(HttpStatus.OK)
+    public EventFullDto getEvent(@PathVariable("eventId") Long eventId, HttpServletRequest httpServletRequest) {
+        log.info("GET /events/{}", eventId);
+        return eventService.getEvent(eventId, httpServletRequest);
+    }
 }

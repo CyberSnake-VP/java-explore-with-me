@@ -42,3 +42,15 @@ CREATE TABLE IF NOT EXISTS events
     FOREIGN KEY (initiator_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS requests
+(
+    id BIGINT GENERATED ALWAYS AS IDENTITY,
+    event_id BIGINT NOT NULL,
+    created TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    requester_id BIGINT NOT NULL,
+    status VARCHAR(100)NOT NULL,
+    CONSTRAINT pk_requests PRIMARY KEY (id),
+    FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_id) REFERENCES users (id) ON DELETE CASCADE,
+);
