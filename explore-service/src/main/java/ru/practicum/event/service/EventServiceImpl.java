@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.EndpointHitDto;
 import ru.practicum.StatsClient;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.category.model.Category;
@@ -273,9 +274,11 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public List<EventShortDto> getEvents(GetEventRequest req, HttpServletRequest httpServletRequest) {
+    public List<EventShortDto> getEvents(GetEventRequest req, HttpServletRequest servlet) {
         log.info("Get events by admin: {}", req);
 
+        // добавить в сервис статистики с помощью клиента данные о просмотре
+        addHitEvent(servlet);
         // Так же для формирования запросов по фильтрам используем QueryDSL, все фильтры складываем в список Expression
         QEvent event = QEvent.event;
         List<BooleanExpression> conditions = new ArrayList<>();
@@ -326,8 +329,11 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventFullDto getEvent(Long eventId, HttpServletRequest httpServletRequest) {
+    public EventFullDto getEvent(Long eventId, HttpServletRequest servlet) {
         log.info("Get event: {}", eventId);
+        // отправляем в сервис статистики данные, через клиента.
+        addHitEvent(servlet);
+
         Event entity = eventRepository.findByIdAndState(eventId, State.PUBLISHED)
                 .orElseThrow(() -> getNotFoundException(eventId));
         log.info("event: {}", entity);
@@ -406,4 +412,13 @@ public class EventServiceImpl implements EventService {
         return view;
     }
 
+    private void addHitEvent(HttpServletRequest servlet) {
+        EndpointHitDto hitDto = EndpointHitDto.builder()
+                .app("ewm-main-service")
+                .uri(servlet.getRequestURI())
+                .ip(servlet.getRemoteAddr())
+                .timestamp(LocalDateTime.now())
+                .build();
+        statsClient.addHit(hitDto);
+    }
 }

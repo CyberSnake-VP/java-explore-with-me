@@ -98,7 +98,7 @@ public class EventController {
                                          @RequestParam(value = "sort", required = false) String sort,
                                          @RequestParam(value = "from", defaultValue = "0") Integer from,
                                          @RequestParam(value = "size", defaultValue = "10") Integer size,
-                                         HttpServletRequest httpServletRequest) {
+                                         HttpServletRequest servlet) {
         log.info("GET /events: text={}, categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text, categoriesIds, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
         return eventService.getEvents(GetEventRequest.of(
@@ -111,14 +111,14 @@ public class EventController {
                         sort,
                         from,
                         size),
-                httpServletRequest
+                servlet
         );
     }
 
     @GetMapping("events/{eventId}")
     @ResponseStatus(HttpStatus.OK)
-    public EventFullDto getEvent(@PathVariable("eventId") Long eventId, HttpServletRequest httpServletRequest) {
+    public EventFullDto getEvent(@PathVariable("eventId") Long eventId, HttpServletRequest servlet) {
         log.info("GET /events/{}", eventId);
-        return eventService.getEvent(eventId, httpServletRequest);
+        return eventService.getEvent(eventId, servlet);
     }
 }
