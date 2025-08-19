@@ -52,5 +52,5 @@ CREATE TABLE IF NOT EXISTS requests
     status VARCHAR(100)NOT NULL,
     CONSTRAINT pk_requests PRIMARY KEY (id),
     FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE,
-    FOREIGN KEY (requester_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (requester_id) REFERENCES users (id) ON DELETE CASCADE
 );
