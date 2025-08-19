@@ -7,6 +7,8 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.request.dto.ParticipantRequestDto;
 import ru.practicum.request.service.RequestService;
 
+import java.util.List;
+
 @RestController
 @RequiredArgsConstructor
 @Slf4j
@@ -21,5 +23,11 @@ public class RequestController {
                             @RequestParam("eventId") Long eventId){
         log.info("POST request for user {} with event id {}", userId, eventId);
         return requestService.addRequest(userId, eventId);
+    }
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public List<ParticipantRequestDto> getRequests(@PathVariable("userId") Long userId){
+        log.info("GET requests for user {}", userId);
+        return requestService.getRequest(userId);
     }
 }
