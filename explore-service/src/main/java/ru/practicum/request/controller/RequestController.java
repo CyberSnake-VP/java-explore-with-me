@@ -30,4 +30,12 @@ public class RequestController {
         log.info("GET requests for user {}", userId);
         return requestService.getRequest(userId);
     }
+
+    @PatchMapping("/{requestId}/cancel")
+    @ResponseStatus(HttpStatus.OK)
+    public ParticipantRequestDto rejectRequest(@PathVariable("userId") Long userId,
+                                               @PathVariable("requestId") Long requestId) {
+        log.info("PATCH request reject for user {} with request id {}", userId, requestId);
+        return requestService.rejectRequest(userId, requestId);
+    }
 }

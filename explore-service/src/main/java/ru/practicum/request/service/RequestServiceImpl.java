@@ -20,7 +20,6 @@ import ru.practicum.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -77,9 +76,21 @@ public class RequestServiceImpl implements RequestService {
     @Override
     public List<ParticipantRequestDto> getRequest(Long userId) {
         log.info("Get Request with userId: {}", userId);
-        User userEntity = userRepository.findById(userId).orElseThrow(() -> getNotFoundException(userId, "User"));
+        userRepository.findById(userId).orElseThrow(() -> getNotFoundException(userId, "User"));
         List<Request> requestsEntity = requestRepository.findRequestByRequesterId(userId);
         return requestsEntity.stream().map(RequestMapper::mapToDto).toList();
+    }
+
+    @Transactional
+    @Override
+    public ParticipantRequestDto rejectRequest(Long userId, Long requestId) {
+        log.info("Reject Request with userId: {}, requestId: {}", userId, requestId);
+        Request requestEntity = requestRepository.findByIdAndRequesterId(requestId, userId).orElseThrow(
+                () -> getNotFoundException(requestId, "Request"));
+        // Устанавливаем статус CANCELLED, теперь нашу заявку не смогут принять.
+        requestEntity.setStatus(RequestStatus.CANCELLED);
+        // возвращаем dto со статусом CANCELED
+        return RequestMapper.mapToDto(requestRepository.save(requestEntity));
     }
 
 
