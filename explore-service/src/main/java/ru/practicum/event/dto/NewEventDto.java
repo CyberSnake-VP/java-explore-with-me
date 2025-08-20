@@ -3,6 +3,7 @@ package ru.practicum.event.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,6 +38,7 @@ public class NewEventDto {
 
     private Boolean paid;           // Нужно ли оплачивать участие в событии, default false
 
+    @Positive
     private Integer participantLimit;  // Ограничение на количество участников. Значение 0 - означает отсутствие ограничения
 
     /** Нужна ли пре-модерация заявок на участие.

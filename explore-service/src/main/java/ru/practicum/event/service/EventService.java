@@ -10,7 +10,7 @@ import java.util.List;
 public interface EventService {
     EventFullDto addEventByUserPrivate(NewEventDto event, Long userId);
     List<EventShortDto> getEventsByUserPrivate(Long userId, Pageable pageable);
-    EventFullDto getEventByUserPrivate(Long eventId, Long userId);
+    EventFullDto getEventByUserPrivate(Long userId, Long eventId);
     EventFullDto updateEventByUserPrivate(UpdateEventUserRequest event, Long userId, Long eventId);
     List<EventFullDto> getEventsByAdmin(GetEventAdminRequest req);
     EventFullDto updateEventByAdmin(UpdateEventAdminRequest event, Long eventId);

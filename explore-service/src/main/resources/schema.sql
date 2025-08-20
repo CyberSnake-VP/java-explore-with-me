@@ -1,9 +1,9 @@
 DROP TABLE IF EXISTS events CASCADE ;
-DROP TABLE IF EXISTS compilation CASCADE;
+DROP TABLE IF EXISTS compilations CASCADE;
+DROP TABLE IF EXISTS compilations_events CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS requests CASCADE;
-DROP TABLE IF EXISTS comment CASCADE;
 
 CREATE TABLE IF NOT EXISTS users
 (
@@ -53,4 +53,21 @@ CREATE TABLE IF NOT EXISTS requests
     CONSTRAINT pk_requests PRIMARY KEY (id),
     FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE,
     FOREIGN KEY (requester_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS compilations
+(
+    id BIGINT GENERATED ALWAYS AS IDENTITY,
+    pinned BOOLEAN NOT NULL,
+    title VARCHAR(50)NOT NULL,
+    CONSTRAINT pk_compilations PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS compilations_events
+(
+    event_id BIGINT NOT NULL,
+    compilation_id BIGINT NOT NULL,
+    CONSTRAINT pk_compilations_events PRIMARY KEY (event_id, compilation_id),
+    FOREIGN KEY (event_id) REFERENCES events (id) ON DELETE CASCADE,
+    FOREIGN KEY (compilation_id) REFERENCES compilations (id) ON DELETE CASCADE
 );

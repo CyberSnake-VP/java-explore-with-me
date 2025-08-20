@@ -32,8 +32,8 @@ public class EventController {
     @GetMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.OK)
     public List<EventShortDto> getEventsUserPrivate(@PathVariable("userId") Long userId,
-                                                    @RequestParam(name = "from") Integer from,
-                                                    @RequestParam(name = "size") Integer size) {
+                                                    @RequestParam(name = "from", defaultValue = "0") Integer from,
+                                                    @RequestParam(name = "size", defaultValue = "10") Integer size) {
         log.info("GET /users/{}/events/ from={}, size={}", userId, from, size);
         return eventService.getEventsByUserPrivate(userId, PageRequest.of(from, size));
     }
@@ -128,7 +128,7 @@ public class EventController {
     public List<ParticipantRequestDto> getRequestEventsAtUser(@PathVariable("userId") Long userId,
                                                               @PathVariable("eventId") Long eventId) {
         log.info("GET /users/{}/events/{}/request", userId, eventId);
-        return eventService.getRequestByUserEvent(eventId, userId);
+        return eventService.getRequestByUserEvent(userId, eventId);
     }
 
     @PatchMapping("/users/{userId}/events/{eventId}/requests")

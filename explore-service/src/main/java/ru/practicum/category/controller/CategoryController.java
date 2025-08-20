@@ -1,4 +1,4 @@
-package ru.practicum.category;
+package ru.practicum.category.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

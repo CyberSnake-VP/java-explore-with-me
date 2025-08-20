@@ -86,22 +86,23 @@ public class EventServiceImpl implements EventService {
     }
 
     @Override
-    public EventFullDto getEventByUserPrivate(Long eventId, Long userId) {
+    public EventFullDto getEventByUserPrivate(Long userId, Long eventId) {
         log.info("Get event: {}, by user: {}", eventId, userId);
 
-        Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId);
+        Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId)
+                .orElseThrow(()-> getNotFoundException(eventId));
 
         return EventMapper.mapToFullDto(entity, getEventHitView(entity));
     }
 
+    @Transactional
     @Override
     public EventFullDto updateEventByUserPrivate(UpdateEventUserRequest event, Long userId, Long eventId) {
         log.info("Update event: {}, by user: {}", eventId, userId);
 
-        Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId);
-        if (entity == null) {
-            throw getNotFoundException(eventId);
-        }
+        Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId)
+                .orElseThrow(()-> getNotFoundException(eventId));
+
         if (entity.getState().equals(State.PUBLISHED)) {
             throw new UpdateEventException("Event must not be published");
         }
@@ -359,6 +360,7 @@ public class EventServiceImpl implements EventService {
                 .toList();
     }
 
+    @Transactional
     @Override
     public EventRequestStatusUpdateResult updateEventRequestStatus(Long userId, Long eventId, EventRequestStatusUpdateRequest req) {
         log.info("Update event request status for user: {}, event: {}, request status: {}", userId, eventId, req.getStatus());
@@ -366,29 +368,29 @@ public class EventServiceImpl implements EventService {
         userRepository.findById(userId).orElseThrow(() -> getNotFoundException(userId));
         Event eventEntity = eventRepository.findById(eventId).orElseThrow(() -> getNotFoundException(eventId));
         // количество участников = количеству заявок
-        int participantCount = requestsEntity.size();
+        int participantCount = req.getRequestIds().size();
 
         List<ParticipantRequestDto> confirmedRequests = new ArrayList<>();
         List<ParticipantRequestDto> rejectedRequests = new ArrayList<>();
 
         // Проверяем событие на количество участников, если неограниченно, можно ставить статус CONFIRMED, а так же модерация не нужна.
-        // Хотя при создании заявки, уст. статус в CONFIRMED, если модерация отключена, все таки включил это условие в это условие
         // Повторно уст-ся статус, но зато запишем кол-во участников и сформируем dto, избежим повторение кода.
         if(eventEntity.getParticipantLimit() == 0 || (eventEntity.getRequestModeration() == false)) {
             log.info("Request moderation is false or participant limit is zero");
             // устанавливаем кол-во участников, а так же записываем все заявки в список подверженных
-            eventEntity.setConfirmedRequest(eventEntity.getConfirmedRequest() + participantCount);
+            eventEntity.setConfirmedRequests(eventEntity.getConfirmedRequests() + participantCount);
             requestsEntity.forEach(request -> {
                 request.setStatus(RequestStatus.CONFIRMED);
                 confirmedRequests.add(RequestMapper.mapToDto(request));
             });
+            eventEntity.setConfirmedRequests(eventEntity.getConfirmedRequests() + participantCount);
             eventRepository.save(eventEntity);
             requestRepository.saveAll(requestsEntity);
             return new EventRequestStatusUpdateResult(confirmedRequests, rejectedRequests);
         }
 
         // превышен лимит на кол-во участников
-        if(eventEntity.getConfirmedRequest() == eventEntity.getParticipantLimit().longValue()) {
+        if(eventEntity.getParticipantLimit().longValue() <= eventEntity.getConfirmedRequests()) {
             log.warn("Request limit is greater than participant limit");
             throw new ValidationException("Participant limit exceeded");
         }
@@ -408,15 +410,16 @@ public class EventServiceImpl implements EventService {
             switch (req.getStatus()) {
                 case CONFIRMED: {
                     requestsEntity.forEach(request -> {
-                        if(eventEntity.getParticipantLimit() > eventEntity.getConfirmedRequest() + 1) {
+                        if(eventEntity.getParticipantLimit() > eventEntity.getConfirmedRequests()) {
                             request.setStatus(RequestStatus.CONFIRMED);
-                            eventEntity.setConfirmedRequest(eventEntity.getConfirmedRequest() + 1);
+                            eventEntity.setConfirmedRequests(eventEntity.getConfirmedRequests() + 1);
                             confirmedRequests.add(RequestMapper.mapToDto(request));
                         } else {
                             request.setStatus(RequestStatus.REJECTED);
                             rejectedRequests.add(RequestMapper.mapToDto(request));
                         }
                     });
+                    break;
                 }
                 case REJECTED: {
                     requestsEntity.forEach(request -> {
@@ -453,9 +456,9 @@ public class EventServiceImpl implements EventService {
         return false;
     }
 
-    private boolean validateDateUpdateAdmin(UpdateEventAdminRequest event, Event enitiy) {
+    private boolean validateDateUpdateAdmin(UpdateEventAdminRequest event, Event entity) {
         // дата публикации
-        LocalDateTime publishedOn = enitiy.getPublishedOn();
+        LocalDateTime publishedOn = entity.getPublishedOn();
         // дата изменяемого события
         LocalDateTime eventDate = event.getEventDate();
         /** Дата начала изменяемого события должна быть не ранее чем за час от даты публикации*/

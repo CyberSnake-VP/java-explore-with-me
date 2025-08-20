@@ -51,7 +51,7 @@ public class RequestServiceImpl implements RequestService {
             throw new ValidationException("Requestor cannot be the initiator of the event");
         }
         // проверка на количество участников
-        if (eventEntity.getConfirmedRequest() == eventEntity.getParticipantLimit().longValue()) {
+        if (eventEntity.getConfirmedRequests() == eventEntity.getParticipantLimit().longValue()) {
             throw new ValidationException("participant limit exceeded");
         }
         // проверим модерацию
@@ -63,14 +63,17 @@ public class RequestServiceImpl implements RequestService {
                 .status(RequestStatus.PENDING)
                 .created(LocalDateTime.now())
                 .build();
+
         // если модерация включена, то статус у запроса на участие будет PENDING на рассмотрении иначе сразу CONFIRMED
         if (isModeration) {
             return RequestMapper.mapToDto(requestRepository.save(requestEntity));
         } else {
+            // увеличиваем кол-во участников у события, раз модерация не нужна.
+            eventEntity.setConfirmedRequests(eventEntity.getConfirmedRequests() + 1);
+            eventRepository.save(eventEntity);
             requestEntity.setStatus(RequestStatus.CONFIRMED);
             return RequestMapper.mapToDto(requestRepository.save(requestEntity));
         }
-
     }
 
     @Override
@@ -87,8 +90,8 @@ public class RequestServiceImpl implements RequestService {
         log.info("Reject Request with userId: {}, requestId: {}", userId, requestId);
         Request requestEntity = requestRepository.findByIdAndRequesterId(requestId, userId).orElseThrow(
                 () -> getNotFoundException(requestId, "Request"));
-        // Устанавливаем статус CANCELLED, теперь нашу заявку не смогут принять.
-        requestEntity.setStatus(RequestStatus.CANCELLED);
+        // Устанавливаем статус CANCELED, теперь нашу заявку не смогут принять.
+        requestEntity.setStatus(RequestStatus.CANCELED);
         // возвращаем dto со статусом CANCELED
         return RequestMapper.mapToDto(requestRepository.save(requestEntity));
     }
