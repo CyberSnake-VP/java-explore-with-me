@@ -20,10 +20,12 @@ import ru.practicum.event.dto.mapper.EventMapper;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.model.QEvent;
 import ru.practicum.event.repository.EventRepository;
-import ru.practicum.exception.DateValidationException;
-import ru.practicum.exception.NotFoundException;
-import ru.practicum.exception.UpdateEventException;
-import ru.practicum.exception.UpdateEventStatusException;
+import ru.practicum.exception.*;
+import ru.practicum.request.dto.ParticipantRequestDto;
+import ru.practicum.request.dto.mapper.RequestMapper;
+import ru.practicum.request.model.Request;
+import ru.practicum.request.model.RequestStatus;
+import ru.practicum.request.repository.RequestRepository;
 import ru.practicum.user.model.User;
 import ru.practicum.user.repository.UserRepository;
 
@@ -31,6 +33,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Transactional(readOnly = true)
@@ -41,6 +44,7 @@ public class EventServiceImpl implements EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final RequestRepository requestRepository;
     private final StatsClient statsClient;
 
     @Transactional
@@ -202,6 +206,7 @@ public class EventServiceImpl implements EventService {
                 .map(e -> EventMapper.mapToFullDto(e, getEventHitView(e)))
                 .toList();
     }
+
     @Transactional
     @Override
     public EventFullDto updateEventByAdmin(UpdateEventAdminRequest event, Long eventId) {
@@ -314,8 +319,8 @@ public class EventServiceImpl implements EventService {
                 .orElse(Expressions.TRUE);
 
         Sort sort = Sort.by("id");
-        if(req.getSort() != null) {
-             sort = makeOrderBySort(req.getSort());
+        if (req.getSort() != null) {
+            sort = makeOrderBySort(req.getSort());
         }
         PageRequest pageRequest = PageRequest.of(req.getFrom(), req.getSize(), sort);
 
@@ -338,6 +343,92 @@ public class EventServiceImpl implements EventService {
                 .orElseThrow(() -> getNotFoundException(eventId));
         log.info("event: {}", entity);
         return EventMapper.mapToFullDto(entity, getEventHitView(entity));
+    }
+
+    @Override
+    public List<ParticipantRequestDto> getRequestByUserEvent(Long userId, Long eventId) {
+        log.info("Get request at user: {}, event: {}", userId, eventId);
+        // Проверяю, существует ли событие
+        Event eventEntity = eventRepository.findById(eventId).orElseThrow(() -> getNotFoundException(eventId));
+        // Проверка на то, чтобы пользователь был инициатор для данного события.
+        if (!Objects.equals(eventEntity.getInitiator().getId(), userId)) {
+            throw new ValidationException("Did not initiator with id " + userId + " for event with id " + eventId);
+        }
+        return requestRepository.findAllByEventId(eventId).stream()
+                .map(RequestMapper::mapToDto)
+                .toList();
+    }
+
+    @Override
+    public EventRequestStatusUpdateResult updateEventRequestStatus(Long userId, Long eventId, EventRequestStatusUpdateRequest req) {
+        log.info("Update event request status for user: {}, event: {}, request status: {}", userId, eventId, req.getStatus());
+        List<Request> requestsEntity = requestRepository.findByIdIn(req.getRequestIds());
+        userRepository.findById(userId).orElseThrow(() -> getNotFoundException(userId));
+        Event eventEntity = eventRepository.findById(eventId).orElseThrow(() -> getNotFoundException(eventId));
+        // количество участников = количеству заявок
+        int participantCount = requestsEntity.size();
+
+        List<ParticipantRequestDto> confirmedRequests = new ArrayList<>();
+        List<ParticipantRequestDto> rejectedRequests = new ArrayList<>();
+
+        // Проверяем событие на количество участников, если неограниченно, можно ставить статус CONFIRMED, а так же модерация не нужна.
+        // Хотя при создании заявки, уст. статус в CONFIRMED, если модерация отключена, все таки включил это условие в это условие
+        // Повторно уст-ся статус, но зато запишем кол-во участников и сформируем dto, избежим повторение кода.
+        if(eventEntity.getParticipantLimit() == 0 || (eventEntity.getRequestModeration() == false)) {
+            log.info("Request moderation is false or participant limit is zero");
+            // устанавливаем кол-во участников, а так же записываем все заявки в список подверженных
+            eventEntity.setConfirmedRequest(eventEntity.getConfirmedRequest() + participantCount);
+            requestsEntity.forEach(request -> {
+                request.setStatus(RequestStatus.CONFIRMED);
+                confirmedRequests.add(RequestMapper.mapToDto(request));
+            });
+            eventRepository.save(eventEntity);
+            requestRepository.saveAll(requestsEntity);
+            return new EventRequestStatusUpdateResult(confirmedRequests, rejectedRequests);
+        }
+
+        // превышен лимит на кол-во участников
+        if(eventEntity.getConfirmedRequest() == eventEntity.getParticipantLimit().longValue()) {
+            log.warn("Request limit is greater than participant limit");
+            throw new ValidationException("Participant limit exceeded");
+        }
+
+        // У заявок для пре-модерации должен быть статус PENDING
+        requestsEntity.stream()
+                .filter(request -> request.getStatus().equals(RequestStatus.PENDING))
+                .findFirst()
+                .orElseThrow(() -> new ValidationException("Request must have status PENDING"));
+
+
+        /** Логика установки статуса заявкам. Пробегаемся циклом по заявкам, если лимит участников не превышен,
+         * устанавливаем статус заявке CONFIRMED, записываем в событие участника(прибавляем кол-во)
+         * и вносим заявку в подготовленный список dto: ConfirmedRequests, если при добавлении участника к событию
+         * будет превышен лимит, то остальные заявки на участие будут отклонены, и записаны в список dto: RejectedRequests*/
+        if(req.getStatus() != null) {
+            switch (req.getStatus()) {
+                case CONFIRMED: {
+                    requestsEntity.forEach(request -> {
+                        if(eventEntity.getParticipantLimit() > eventEntity.getConfirmedRequest() + 1) {
+                            request.setStatus(RequestStatus.CONFIRMED);
+                            eventEntity.setConfirmedRequest(eventEntity.getConfirmedRequest() + 1);
+                            confirmedRequests.add(RequestMapper.mapToDto(request));
+                        } else {
+                            request.setStatus(RequestStatus.REJECTED);
+                            rejectedRequests.add(RequestMapper.mapToDto(request));
+                        }
+                    });
+                }
+                case REJECTED: {
+                    requestsEntity.forEach(request -> {
+                        request.setStatus(RequestStatus.REJECTED);
+                    });
+                }
+            }
+        }
+
+        eventRepository.save(eventEntity);
+        requestRepository.saveAll(requestsEntity);
+        return new EventRequestStatusUpdateResult(confirmedRequests, rejectedRequests);
     }
 
     // метод будет возвращать нужный вид сортировки.
@@ -412,6 +503,7 @@ public class EventServiceImpl implements EventService {
         return view;
     }
 
+    // метод для записи в сервис статистики данных о просмотрах событий
     private void addHitEvent(HttpServletRequest servlet) {
         EndpointHitDto hitDto = EndpointHitDto.builder()
                 .app("ewm-main-service")

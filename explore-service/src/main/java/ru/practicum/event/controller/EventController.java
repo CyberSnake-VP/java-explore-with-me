@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.event.dto.*;
 import ru.practicum.event.service.EventService;
+import ru.practicum.request.dto.ParticipantRequestDto;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -120,5 +121,22 @@ public class EventController {
     public EventFullDto getEvent(@PathVariable("eventId") Long eventId, HttpServletRequest servlet) {
         log.info("GET /events/{}", eventId);
         return eventService.getEvent(eventId, servlet);
+    }
+
+    @GetMapping("/users/{userId}/events/{eventId}/requests")
+    @ResponseStatus(HttpStatus.OK)
+    public List<ParticipantRequestDto> getRequestEventsAtUser(@PathVariable("userId") Long userId,
+                                                              @PathVariable("eventId") Long eventId) {
+        log.info("GET /users/{}/events/{}/request", userId, eventId);
+        return eventService.getRequestByUserEvent(eventId, userId);
+    }
+
+    @PatchMapping("/users/{userId}/events/{eventId}/requests")
+    @ResponseStatus(HttpStatus.OK)
+    public EventRequestStatusUpdateResult updateRequestStatus(@PathVariable("userId") Long userId,
+                                                              @PathVariable("eventId") Long eventId,
+                                                              @RequestBody EventRequestStatusUpdateRequest request) {
+        log.info("PATCH /users/{}/events/{}/request", userId, eventId);
+        return eventService.updateEventRequestStatus(userId, eventId, request);
     }
 }
