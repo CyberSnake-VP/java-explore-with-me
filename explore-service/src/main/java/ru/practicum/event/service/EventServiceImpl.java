@@ -421,6 +421,7 @@ public class EventServiceImpl implements EventService {
                 case REJECTED: {
                     requestsEntity.forEach(request -> {
                         request.setStatus(RequestStatus.REJECTED);
+                        rejectedRequests.add(RequestMapper.mapToDto(request));
                     });
                 }
             }
