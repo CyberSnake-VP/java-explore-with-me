@@ -119,7 +119,6 @@ public class CompilationServiceImpl implements CompilationService {
     @Override
     public List<CompilationDto> getAll(Boolean pinned, Pageable pageable) {
         log.info("Get list compilations: {}, with pinned: {}", pageable, pinned);
-        List<CompilationDto> compilationsDto = new ArrayList<>();
         // если есть флаг закрепленных или незакрепленных подборок, то ищем с учетом фильтра и pageable
         if (pinned != null) {
             List<Compilation> compilationsEntity = compilationRepository.findAllByPinned(pinned, pageable);
