@@ -25,19 +25,19 @@ public class GetEventAdminRequest {
                                           final Integer from,
                                           final Integer size) {
         GetEventAdminRequest request = new GetEventAdminRequest();
-        if(userIds != null) {
+        if (userIds != null) {
             request.setUserIds(userIds);
         }
-        if(states != null) {
+        if (states != null) {
             request.setStates(states.stream().map(State::valueOf).toList());
         }
-        if(categoryIds != null) {
+        if (categoryIds != null) {
             request.setCategoryIds(categoryIds);
         }
-        if(rangeStart != null) {
+        if (rangeStart != null) {
             request.setRangeStart(rangeStart);
         }
-        if(rangeEnd != null) {
+        if (rangeEnd != null) {
             request.setRangeEnd(rangeEnd);
         }
         request.setFrom(from);

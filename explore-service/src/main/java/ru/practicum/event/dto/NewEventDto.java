@@ -1,7 +1,10 @@
 package ru.practicum.event.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -38,9 +41,11 @@ public class NewEventDto {
     @Min(0)
     private Integer participantLimit;  // Ограничение на количество участников. Значение 0 - означает отсутствие ограничения
 
-    /** Нужна ли пре-модерация заявок на участие.
+    /**
+     * Нужна ли пре-модерация заявок на участие.
      * Если true, то все заявки будут ожидать подтверждения инициатором события.
-     * Если false - то будут подтверждаться автоматически.*/
+     * Если false - то будут подтверждаться автоматически.
+     */
     private Boolean requestModeration;
 
     @Size(min = 3, max = 120)

@@ -9,8 +9,12 @@ import java.util.List;
 
 public interface CompilationService {
     CompilationDto addCompilationByAdmin(final NewCompilationDto compilationDto);
+
     void deleteCompilationByAdmin(final Long compId);
-     CompilationDto updateCompilationByAdmin(UpdateCompilationRequest requestDto, Long compId);
-     CompilationDto get(Long compId);
-     List<CompilationDto> getAll(Boolean pinned, Pageable pageable);
+
+    CompilationDto updateCompilationByAdmin(UpdateCompilationRequest requestDto, Long compId);
+
+    CompilationDto get(Long compId);
+
+    List<CompilationDto> getAll(Boolean pinned, Pageable pageable);
 }

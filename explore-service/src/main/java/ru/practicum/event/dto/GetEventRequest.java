@@ -29,25 +29,25 @@ public class GetEventRequest {
                                      final Integer from,
                                      final Integer size) {
         GetEventRequest req = new GetEventRequest();
-        if(text != null) {
+        if (text != null) {
             req.setText(text);
         }
-        if(categoriesIds != null) {
+        if (categoriesIds != null) {
             req.setCategoriesIds(categoriesIds);
         }
-        if(paid != null) {
+        if (paid != null) {
             req.setPaid(paid);
         }
-        if(rangeStart != null) {
+        if (rangeStart != null) {
             req.setRangeStart(rangeStart);
         }
-        if(rangeEnd != null) {
+        if (rangeEnd != null) {
             req.setRangeEnd(rangeEnd);
         }
-        if(onlyAvailable != null) {
+        if (onlyAvailable != null) {
             req.setOnlyAvailable(onlyAvailable);
         }
-        if(sort != null) {
+        if (sort != null) {
             req.setSort(Sort.valueOf(sort));
         }
         req.setFrom(from);
@@ -55,5 +55,5 @@ public class GetEventRequest {
         return req;
     }
 
-    public enum Sort {EVENT_DATE, VIEWS}
+    public enum Sort { EVENT_DATE, VIEWS }
 }

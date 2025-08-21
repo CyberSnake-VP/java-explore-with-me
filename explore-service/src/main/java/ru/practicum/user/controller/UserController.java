@@ -40,7 +40,7 @@ public class UserController {
     @DeleteMapping("/{userId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteUser(@PathVariable(value = "userId") @Positive Long userId) {
-         userService.delete(userId);
+        userService.delete(userId);
     }
 
 }

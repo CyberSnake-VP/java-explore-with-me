@@ -15,7 +15,6 @@ import ru.practicum.exception.NotFoundException;
 import ru.practicum.exception.ValidationException;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -65,9 +64,9 @@ public class CategoryServiceImpl implements CategoryService {
         log.info("Delete category: {}", id);
         Category entity = validateExistence(id);
         if (entity != null) {
-           if(eventRepository.existsEventByCategoryId(id)){
-               throw getValidationException("The category is not empty");
-           }
+            if (eventRepository.existsEventByCategoryId(id)) {
+                throw getValidationException("The category is not empty");
+            }
             log.info("Category: {} is deleted", entity);
             categoryRepository.delete(entity);
         } else {

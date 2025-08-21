@@ -8,8 +8,12 @@ import java.util.List;
 
 public interface CategoryService {
     CategoryDto create(NewCategoryDto category);
+
     CategoryDto update(CategoryDto category, Long id);
+
     CategoryDto delete(Long id);
+
     CategoryDto get(Long id);
+
     List<CategoryDto> getAll(Pageable pageable);
 }

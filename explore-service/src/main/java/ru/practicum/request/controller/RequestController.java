@@ -20,13 +20,14 @@ public class RequestController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ParticipantRequestDto postRequest(@PathVariable("userId") Long userId,
-                            @RequestParam("eventId") Long eventId){
+                                             @RequestParam("eventId") Long eventId) {
         log.info("POST request for user {} with event id {}", userId, eventId);
         return requestService.addRequest(userId, eventId);
     }
+
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<ParticipantRequestDto> getRequests(@PathVariable("userId") Long userId){
+    public List<ParticipantRequestDto> getRequests(@PathVariable("userId") Long userId) {
         log.info("GET requests for user {}", userId);
         return requestService.getRequest(userId);
     }

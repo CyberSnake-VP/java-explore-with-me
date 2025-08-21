@@ -40,6 +40,7 @@ public class ErrorHandler {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
+
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleIllegalArgument(final IllegalArgumentException e) {
@@ -81,7 +82,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleError(final RuntimeException e) {
         log.warn(e.getMessage(), e);
-        return  ApiError.builder()
+        return ApiError.builder()
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .reason("Internal Server Error")
                 .message(e.getMessage())
@@ -130,22 +131,22 @@ public class ErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public List<ApiError> handleMethodArgumentNotValid(final MethodArgumentNotValidException e) {
-       final List<Violation> violations = e.getBindingResult().getFieldErrors().stream()
-               .map(error-> new Violation(error.getField(), error.getDefaultMessage()))
-               .toList();
+        final List<Violation> violations = e.getBindingResult().getFieldErrors().stream()
+                .map(error -> new Violation(error.getField(), error.getDefaultMessage()))
+                .toList();
 
-       List<ApiError> apiErrors = new ArrayList<>();
+        List<ApiError> apiErrors = new ArrayList<>();
 
-       for (Violation violation : violations) {
-           apiErrors.add(ApiError.builder()
-                   .status(HttpStatus.BAD_REQUEST)
-                   .message(violation.getMessage())
-                   .reason("Incorrectly made request.")
-                   .timestamp(LocalDateTime.now())
-                   .build());
-       }
+        for (Violation violation : violations) {
+            apiErrors.add(ApiError.builder()
+                    .status(HttpStatus.BAD_REQUEST)
+                    .message(violation.getMessage())
+                    .reason("Incorrectly made request.")
+                    .timestamp(LocalDateTime.now())
+                    .build());
+        }
 
-       return apiErrors;
+        return apiErrors;
     }
 
 

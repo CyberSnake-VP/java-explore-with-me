@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventMapper {
-    public static Event mapToEntity (NewEventDto newEventDto, User user, Category category) {
+    public static Event mapToEntity(NewEventDto newEventDto, User user, Category category) {
         return Event.builder()
                 .eventDate(newEventDto.getEventDate())
                 .annotation(newEventDto.getAnnotation())
@@ -33,7 +33,7 @@ public class EventMapper {
                 .build();
     }
 
-    public static EventFullDto mapToFullDto (Event event, Long views) {
+    public static EventFullDto mapToFullDto(Event event, Long views) {
         return EventFullDto.builder()
                 .id(event.getId())
                 .annotation(event.getAnnotation())
@@ -54,7 +54,7 @@ public class EventMapper {
                 .build();
     }
 
-    public static EventShortDto mapToShortDto (Event event, Long views) {
+    public static EventShortDto mapToShortDto(Event event, Long views) {
         return EventShortDto.builder()
                 .id(event.getId())
                 .annotation(event.getAnnotation())

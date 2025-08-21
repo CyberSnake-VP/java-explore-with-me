@@ -166,10 +166,12 @@ public class CompilationServiceImpl implements CompilationService {
         return new NotFoundException(message, reason);
     }
 
-    /** Вспомогательный метод для получения списка объектов dto, думал поместить его в CompilationMapper, но
+    /**
+     * Вспомогательный метод для получения списка объектов dto, думал поместить его в CompilationMapper, но
      * тут используется метод getEventHitView для получения из сервиса статистики данных о кол-ве просмотров.
-     * Удобнее использовать его отсюда.*/
-    private List<CompilationDto> getCompilationDtoList(List<Compilation> compilations ) {
+     * Удобнее использовать его отсюда.
+     */
+    private List<CompilationDto> getCompilationDtoList(List<Compilation> compilations) {
         List<CompilationDto> compilationsDto = new ArrayList<>();
         List<EventShortDto> eventsShort;
         for (Compilation c : compilations) {

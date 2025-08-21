@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CompilationMapper {
 
-    public static CompilationDto mapToCompilationDto(Compilation compilation,  List<EventShortDto> eventsShort) {
+    public static CompilationDto mapToCompilationDto(Compilation compilation, List<EventShortDto> eventsShort) {
         return CompilationDto.builder()
                 .id(compilation.getId())
                 .title(compilation.getTitle())

@@ -18,7 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CompilationController {
     private final CompilationService service;
-    
+
     @PostMapping("/admin/compilations")
     @ResponseStatus(HttpStatus.CREATED)
     public CompilationDto createAdmin(@RequestBody @Valid final NewCompilationDto compilationDto) {
@@ -36,7 +36,7 @@ public class CompilationController {
     @PatchMapping("/admin/compilations/{compId}")
     @ResponseStatus(HttpStatus.OK)
     public CompilationDto updateAdmin(@RequestBody @Valid final UpdateCompilationRequest updateCompilationRequest,
-                                 @PathVariable("compId") Long compId) {
+                                      @PathVariable("compId") Long compId) {
         log.info("PATCH compilation id: {}, with request body: {}", compId, updateCompilationRequest);
         return service.updateCompilationByAdmin(updateCompilationRequest, compId);
     }
@@ -52,7 +52,7 @@ public class CompilationController {
     @ResponseStatus(HttpStatus.OK)
     public List<CompilationDto> getAll(@RequestParam(name = "pinned", required = false) Boolean pinned,
                                        @RequestParam(name = "from", defaultValue = "0") Integer from,
-                                       @RequestParam(name = "size", defaultValue = "10") Integer size){
+                                       @RequestParam(name = "size", defaultValue = "10") Integer size) {
         log.info("GET all compilations with pinned: {}, from: {}, size: {}", pinned, from, size);
         return service.getAll(pinned, PageRequest.of(from, size));
     }

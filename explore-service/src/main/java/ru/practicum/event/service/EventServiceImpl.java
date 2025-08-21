@@ -90,7 +90,7 @@ public class EventServiceImpl implements EventService {
         log.info("Get event: {}, by user: {}", eventId, userId);
 
         Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId)
-                .orElseThrow(()-> getNotFoundException(eventId));
+                .orElseThrow(() -> getNotFoundException(eventId));
 
         return EventMapper.mapToFullDto(entity, getEventHitView(entity));
     }
@@ -101,7 +101,7 @@ public class EventServiceImpl implements EventService {
         log.info("Update event: {}, by user: {}", eventId, userId);
 
         Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId)
-                .orElseThrow(()-> getNotFoundException(eventId));
+                .orElseThrow(() -> getNotFoundException(eventId));
 
         if (entity.getState().equals(State.PUBLISHED)) {
             throw new UpdateEventException("Event must not be published");
@@ -303,8 +303,8 @@ public class EventServiceImpl implements EventService {
         if (req.getPaid() != null) {
             conditions.add(event.paid.eq(req.getPaid()));
         }
-        if(req.getRangeStart() != null && req.getRangeEnd() != null) {
-            if(req.getRangeEnd().isBefore(req.getRangeStart())) {
+        if (req.getRangeStart() != null && req.getRangeEnd() != null) {
+            if (req.getRangeEnd().isBefore(req.getRangeStart())) {
                 throw new IllegalArgumentException("Range start must be before range end.");
             }
         }
@@ -315,7 +315,7 @@ public class EventServiceImpl implements EventService {
             conditions.add(event.eventDate.before(req.getRangeEnd()));
         }
         if (req.getOnlyAvailable()) {
-            conditions.add(event.confirmedRequest.lt(event.participantLimit));
+            conditions.add(event.confirmedRequests.lt(event.participantLimit));
         }
 
         // из всех подготовленных условий, составляем единое условие. Если ни одного фильтра не получили, используем
@@ -380,7 +380,7 @@ public class EventServiceImpl implements EventService {
 
         // Проверяем событие на количество участников, если неограниченно, можно ставить статус CONFIRMED, а так же модерация не нужна.
         // Повторно уст-ся статус, но зато запишем кол-во участников и сформируем dto, избежим повторение кода.
-        if(eventEntity.getParticipantLimit() == 0 || (eventEntity.getRequestModeration() == false)) {
+        if (eventEntity.getParticipantLimit() == 0 || (eventEntity.getRequestModeration() == false)) {
             log.info("Request moderation is false or participant limit is zero");
             // устанавливаем кол-во участников, а так же записываем все заявки в список подверженных
             eventEntity.setConfirmedRequests(eventEntity.getConfirmedRequests() + participantCount);
@@ -395,7 +395,7 @@ public class EventServiceImpl implements EventService {
         }
 
         // превышен лимит на кол-во участников
-        if(eventEntity.getParticipantLimit().longValue() <= eventEntity.getConfirmedRequests()) {
+        if (eventEntity.getParticipantLimit().longValue() <= eventEntity.getConfirmedRequests()) {
             log.warn("Request limit is greater than participant limit");
             throw new ValidationException("Participant limit exceeded");
         }
@@ -411,11 +411,11 @@ public class EventServiceImpl implements EventService {
          * устанавливаем статус заявке CONFIRMED, записываем в событие участника(прибавляем кол-во)
          * и вносим заявку в подготовленный список dto: ConfirmedRequests, если при добавлении участника к событию
          * будет превышен лимит, то остальные заявки на участие будут отклонены, и записаны в список dto: RejectedRequests*/
-        if(req.getStatus() != null) {
+        if (req.getStatus() != null) {
             switch (req.getStatus()) {
                 case CONFIRMED: {
                     requestsEntity.forEach(request -> {
-                        if(eventEntity.getParticipantLimit() > eventEntity.getConfirmedRequests()) {
+                        if (eventEntity.getParticipantLimit() > eventEntity.getConfirmedRequests()) {
                             request.setStatus(RequestStatus.CONFIRMED);
                             eventEntity.setConfirmedRequests(eventEntity.getConfirmedRequests() + 1);
                             confirmedRequests.add(RequestMapper.mapToDto(request));
