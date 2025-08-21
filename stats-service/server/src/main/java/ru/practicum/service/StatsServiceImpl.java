@@ -1,12 +1,12 @@
 package ru.practicum.service;
 
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.EndpointHitDto;
 import ru.practicum.ViewStatsDto;
+import ru.practicum.exception.DateValidationException;
 import ru.practicum.mapper.EndpointHitMapper;
 import ru.practicum.model.EndpointHit;
 import ru.practicum.repository.StatsRepository;
@@ -55,7 +55,7 @@ public class StatsServiceImpl implements StatsService {
 
     private void validDates(LocalDateTime start, LocalDateTime end) {
         if (start.isAfter(end) || start.isEqual(end)) {
-            throw new ValidationException(String.format("Incorrected statistic period. Start: %s, End: %s", start, end));
+            throw new DateValidationException(String.format("Incorrected statistic period. Start: %s, End: %s", start, end));
         }
     }
 }
