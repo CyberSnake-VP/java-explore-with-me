@@ -342,6 +342,7 @@ public class EventServiceImpl implements EventService {
     @Override
     public EventFullDto getEvent(Long eventId, HttpServletRequest servlet) {
         log.info("Get event: {}", eventId);
+
         // отправляем в сервис статистики данные, через клиента.
         addHitEvent(servlet);
 

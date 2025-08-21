@@ -21,12 +21,11 @@ import java.util.List;
 
 public class StatsClient extends BaseClient {
     private static final String API_PREFIX = "/";
-    private final RestClient restClient = RestClient.builder()
-            .requestFactory(new HttpComponentsClientHttpRequestFactory())
-            .uriBuilderFactory(new DefaultUriBuilderFactory("http://localhost:9090" + API_PREFIX))
-            .build();
+    private final RestClient restClient;
 
-
+    /** ВАЖНЫЙ МОМЕНТ. в конструкторе используется значение из конфигурационного файла, url сервера. Т.к. в докере
+     * меняется значение переменной окружения то и для клиента значение изменится.
+     * Если исп. локально одно, через докер другое!*/
     @Autowired
     public StatsClient(@Value("${stats-server.url}") String serverUrl, RestTemplateBuilder builder) {
         super(
@@ -35,13 +34,17 @@ public class StatsClient extends BaseClient {
                         .requestFactory(() -> new HttpComponentsClientHttpRequestFactory())
                         .build()
         );
+        restClient = RestClient.builder()
+                .requestFactory(new HttpComponentsClientHttpRequestFactory())
+                .uriBuilderFactory(new DefaultUriBuilderFactory(serverUrl + API_PREFIX))
+                .build();
     }
 
     // метод для отправки запроса на отправки события в сервис статистики
     public EndpointHitDto addHit(EndpointHitDto endpointHitDto) {
         ParameterizedTypeReference<EndpointHitDto> responseType = new ParameterizedTypeReference<>() {
         };
-        return post("/hit", endpointHitDto, responseType).getBody();
+       return post("/hit", endpointHitDto, responseType).getBody();
     }
 
 
