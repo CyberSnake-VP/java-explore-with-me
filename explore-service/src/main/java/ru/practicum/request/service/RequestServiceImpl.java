@@ -51,7 +51,9 @@ public class RequestServiceImpl implements RequestService {
             throw new ValidationException("Requestor cannot be the initiator of the event");
         }
         // проверка на количество участников
-        if (eventEntity.getConfirmedRequests() == eventEntity.getParticipantLimit().longValue()) {
+        if (eventEntity.getParticipantLimit() != 0 &&
+                eventEntity.getParticipantLimit() ==
+                        eventEntity.getConfirmedRequests().longValue()) {
             throw new ValidationException("participant limit exceeded");
         }
         // проверим модерацию
@@ -65,7 +67,7 @@ public class RequestServiceImpl implements RequestService {
                 .build();
 
         // если модерация включена, то статус у запроса на участие будет PENDING на рассмотрении иначе сразу CONFIRMED
-        if (isModeration) {
+        if (isModeration && eventEntity.getParticipantLimit() != 0) {
             return RequestMapper.mapToDto(requestRepository.save(requestEntity));
         } else {
             // увеличиваем кол-во участников у события, раз модерация не нужна.
