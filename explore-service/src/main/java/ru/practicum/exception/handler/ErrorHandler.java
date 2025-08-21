@@ -30,12 +30,23 @@ public class ErrorHandler {
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleValidateForbidden(final DateValidationException e) {
         log.warn(e.getMessage(), e);
         return ApiError.builder()
-                .status(HttpStatus.FORBIDDEN)
-                .reason("For the requested operation the conditions are not met.")
+                .status(HttpStatus.BAD_REQUEST)
+                .reason("Incorrectly made request.")
+                .message(e.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleIllegalArgument(final IllegalArgumentException e) {
+        log.warn(e.getMessage(), e);
+        return ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .reason("Incorrectly made request.")
                 .message(e.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();

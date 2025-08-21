@@ -174,7 +174,7 @@ public class EventServiceImpl implements EventService {
         // И все нужные условия фильтрации будем собирать в список
         List<BooleanExpression> conditions = new ArrayList<>();
         if (req.getUserIds() != null) {
-            conditions.add(event.id.in(req.getUserIds()));
+            conditions.add(event.initiator.id.in(req.getUserIds()));
         }
         if (req.getStates() != null) {
             conditions.add(event.state.in(req.getStates()));
@@ -302,6 +302,11 @@ public class EventServiceImpl implements EventService {
         }
         if (req.getPaid() != null) {
             conditions.add(event.paid.eq(req.getPaid()));
+        }
+        if(req.getRangeStart() != null && req.getRangeEnd() != null) {
+            if(req.getRangeEnd().isBefore(req.getRangeStart())) {
+                throw new IllegalArgumentException("Range start must be before range end.");
+            }
         }
         if (req.getRangeStart() != null) {
             conditions.add(event.eventDate.after(req.getRangeStart()));
@@ -499,7 +504,7 @@ public class EventServiceImpl implements EventService {
         Long eventId = event.getId();
         List<String> uris = new ArrayList<>();
         uris.add("/events/" + eventId);
-        List<ViewStatsDto> views = statsClient.getStats(start, end, uris, false);
+        List<ViewStatsDto> views = statsClient.getStats(start, end, uris, true);
         Long view = 0L;
         if (!views.isEmpty()) {
             return views.getFirst().getHits();
