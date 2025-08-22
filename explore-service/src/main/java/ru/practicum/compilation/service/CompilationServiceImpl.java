@@ -1,12 +1,10 @@
 package ru.practicum.compilation.service;
 
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.EndpointHitDto;
 import ru.practicum.StatsClient;
 import ru.practicum.ViewStatsDto;
 import ru.practicum.compilation.dto.CompilationDto;
@@ -23,7 +21,9 @@ import ru.practicum.exception.NotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
@@ -52,9 +52,7 @@ public class CompilationServiceImpl implements CompilationService {
         if (newCompilationDto.getEvents() != null) {
             eventsEntity = eventRepository.findAllById(newCompilationDto.getEvents());
             entity = CompilationMapper.mapToEntity(newCompilationDto, eventsEntity);
-            eventsShort = eventsEntity.stream()
-                    .map(e -> EventMapper.mapToShortDto(e, getEventHitView(e)))
-                    .toList();
+            eventsShort = getEventShortDto(eventsEntity); // получаем список событий с кол-вом просмотров для обратного dto
         } else {
             entity = CompilationMapper.mapToEntity(newCompilationDto, eventsEntity);
         }
@@ -88,9 +86,7 @@ public class CompilationServiceImpl implements CompilationService {
         if (requestDto.getEvents() != null) {
             List<Event> eventsEntity = eventRepository.findAllById(requestDto.getEvents());
             entity.setEvents(eventsEntity);
-            eventsShort = eventsEntity.stream()
-                    .map(e -> EventMapper.mapToShortDto(e, getEventHitView(e)))
-                    .toList();
+            eventsShort = getEventShortDto(eventsEntity);   // заменил получение данных с учетом статистики из бд
         }
         if (requestDto.getPinned() != null) {
             entity.setPinned(requestDto.getPinned());
@@ -110,9 +106,7 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation entity = compilationRepository.findById(compId).orElseThrow(() -> getNotFoundException(compId));
         List<Event> eventsEntity = entity.getEvents();
         // формируем список событий для обратного dto с учетом кол-ва просмотров
-        List<EventShortDto> eventsShort = eventsEntity.stream()
-                .map(e -> EventMapper.mapToShortDto(e, getEventHitView(e)))
-                .toList();
+        List<EventShortDto> eventsShort = getEventShortDto(eventsEntity);
         return CompilationMapper.mapToCompilationDto(entity, eventsShort);
     }
 
@@ -129,35 +123,6 @@ public class CompilationServiceImpl implements CompilationService {
         }
     }
 
-
-    // Метод для получения кол-ва просмотров из сервиса статистики.
-    // Не понятно за какой период получать статистику, указал за 365 дней.
-    private Long getEventHitView(Event event) {
-        // получим выборку в один год от текущей даты.
-        LocalDateTime start = LocalDateTime.now().minusDays(365);
-        LocalDateTime end = LocalDateTime.now();
-        Long eventId = event.getId();
-        List<String> uris = new ArrayList<>();
-        uris.add("/events/" + eventId);
-        List<ViewStatsDto> views = statsClient.getStats(start, end, uris, false);
-        Long view = 0L;
-        if (!views.isEmpty()) {
-            return views.getFirst().getHits();
-        }
-        return view;
-    }
-
-    // метод для записи в сервис статистики данных о просмотрах событий
-    private void addHitEvent(HttpServletRequest servlet) {
-        EndpointHitDto hitDto = EndpointHitDto.builder()
-                .app("ewm-main-service")
-                .uri(servlet.getRequestURI())
-                .ip(servlet.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
-                .build();
-        statsClient.addHit(hitDto);
-    }
-
     private NotFoundException getNotFoundException(Long id) {
         log.info("Compilation not found with id: {}", id);
         String reason = "The required object was not found.";
@@ -165,21 +130,59 @@ public class CompilationServiceImpl implements CompilationService {
         return new NotFoundException(message, reason);
     }
 
-    /**
-     * Вспомогательный метод для получения списка объектов dto, думал поместить его в CompilationMapper, но
-     * тут используется метод getEventHitView для получения из сервиса статистики данных о кол-ве просмотров.
-     * Удобнее использовать его отсюда.
-     */
     private List<CompilationDto> getCompilationDtoList(List<Compilation> compilations) {
         List<CompilationDto> compilationsDto = new ArrayList<>();
         List<EventShortDto> eventsShort;
         for (Compilation c : compilations) {
-            eventsShort = c.getEvents().stream()
-                    .map(e -> EventMapper.mapToShortDto(e, getEventHitView(e)))
-                    .toList();
+            eventsShort = getEventShortDto(c.getEvents());  // переделал метод получения данных из бд статистики.
             compilationsDto.add(CompilationMapper.mapToCompilationDto(c, eventsShort));
         }
         return compilationsDto;
     }
 
+    /**
+     * Метод для получения списка объектов EventShortDto c количеством просмотров, для формирования обратного dto.
+     * Идея в том, что теперь мы будем формировать список из uri каждого события из входящего списка событий.
+     * Теперь один раз получаем статистику по этим uri, возьмем от туда кол-во просмотров конкретного события по uri
+     */
+    private List<EventShortDto> getEventShortDto(List<Event> events) {
+
+        // формируем список для последующей отправки запроса клиента
+        log.info("Get events short: {}", events);
+        List<String> uris = new ArrayList<>();
+        for (Event e : events) {
+            log.info("date createdOn on event {}", e.getCreatedOn());
+            uris.add("/events/" + e.getId());
+        }
+
+        LocalDateTime start = LocalDateTime.now().minusDays(365);
+
+        // поиск будем вести до текущей даты
+        LocalDateTime end = LocalDateTime.now();
+
+        // получим статистику за все события.
+        List<ViewStatsDto> views = statsClient.getStats(start, end, uris, false);
+
+        // Таблица с событием и его кол-ом просмотров.
+        Map<Event, Long> hits = new HashMap<>();
+
+        /** Запускаем перебор по списку событий, используем id конкретного события
+         * и запишем это событие в случае совпадения в таблицу, где ключ будет событие и в качестве зн-я будет кол-во просмотров
+         * Если в сервисе статистики события еще нет, то запишем в качестве кол-ва просмотров "0" */
+        if (!events.isEmpty()) {
+            for (Event e : events) {
+                views.stream()
+                        .filter(v -> v.getUri().equals("/events/" + e.getId()))
+                        .findFirst()
+                        .ifPresentOrElse(v -> hits.put(e, v.getHits()), () -> hits.put(e, 0L));
+            }
+        }
+        /** Возвращаем список уже подготовленных объектов EventShortDto c количеством просмотров, для формирования обратного dto.
+         * Используем нашу таблицу hits, получаем объект EventShortDto, в его параметрах, событие и кол-во просмотров.
+         * Берем эти данные из нашей подготовленной таблицы hits.
+         * */
+        return hits.entrySet().stream()
+                .map(entry -> EventMapper.mapToShortDto(entry.getKey(), entry.getValue()))
+                .toList();
+    }
 }
