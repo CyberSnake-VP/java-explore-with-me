@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import ru.practicum.exception.DateValidationException;
 
 @Slf4j
 @RestControllerAdvice
@@ -34,6 +35,13 @@ public class ErrorHandler {
     public ErrorResponse handleConstraintViolation(final ConstraintViolationException e) {
         log.info("Constraint violation: {}", e.getMessage());
         log.warn(e.getMessage());
+        return ErrorResponse.builder().error(e.getMessage()).build();
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler
+    public ErrorResponse handleDateValidation(final DateValidationException e) {
+        log.error("Ошибка при валидации дат: {}", e.getMessage());
         return ErrorResponse.builder().error(e.getMessage()).build();
     }
 
