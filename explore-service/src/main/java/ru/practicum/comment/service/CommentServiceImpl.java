@@ -5,21 +5,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.StatsClient;
-import ru.practicum.ViewStatsDto;
+import ru.practicum.utils.StatsClientUtil;
 import ru.practicum.comment.dto.CommentDto;
 import ru.practicum.comment.dto.NewCommentDto;
 import ru.practicum.comment.dto.UpdateCommentDto;
 import ru.practicum.comment.dto.mapper.CommentMapper;
 import ru.practicum.comment.model.Comment;
 import ru.practicum.comment.repository.CommentRepository;
+import ru.practicum.event.dto.EventShortDto;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.exception.NotFoundException;
 import ru.practicum.user.model.User;
 import ru.practicum.user.repository.UserRepository;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,7 +30,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
-    private final StatsClient statsClient;
+    private final StatsClientUtil statsClient;
 
     @Transactional
     @Override
@@ -42,7 +41,7 @@ public class CommentServiceImpl implements CommentService {
         Comment commentEntity = CommentMapper.mapToEntity(newComment, userEntity, eventEntity);
         log.info("Comment {}, created", newComment.getText());
         commentRepository.save(commentEntity);
-        return CommentMapper.mapToCommentDto(commentEntity, getEventHitView(eventEntity));
+        return CommentMapper.mapToCommentDto(commentEntity, statsClient.getEventHitView(eventEntity));
     }
 
     @Override
@@ -51,25 +50,33 @@ public class CommentServiceImpl implements CommentService {
         Comment entity = commentRepository.findByIdAndAuthorId(commentId, userId)
                 .orElseThrow(() -> getNotFoundException(commentId, "Comment"));
         log.info("Comment found: {}", entity);
-        return CommentMapper.mapToCommentDto(entity, getEventHitView(entity.getEvent()));
+        return CommentMapper.mapToCommentDto(entity, statsClient.getEventHitView(entity.getEvent()));
     }
 
     @Override
     public List<CommentDto> getAllByUser(Long userId, Pageable pageable) {
         log.info("Get all comment by user {}", userId);
+
+        // получим список комментариев
         List<Comment> entitysList = commentRepository.findAll(pageable).getContent();
-        return entitysList.stream()
-                .map(c -> CommentMapper.mapToCommentDto(c, getEventHitView(c.getEvent())))
-                .toList();
+        // извлечем из списка комментов события к которым писались комментарии
+        List<Event> eventsEntity = entitysList.stream().map(Comment::getEvent).toList();
+        // получим статистику посещений для списка событий одним запросом.
+        List<EventShortDto> eventsShort = statsClient.getEventShortDto(eventsEntity);
+        return CommentMapper.mapToCommentDto(entitysList, new ArrayList<>(eventsShort));
     }
 
     @Override
     public List<CommentDto> getAllByEvent(Long eventId, Pageable pageable) {
         log.info("Get all comment by event {}", eventId);
+
+        // получим список комментариев к конкретному событию
         List<Comment> entitysList = commentRepository.findAllByEventId(eventId, pageable);
-        return entitysList.stream()
-                .map(c -> CommentMapper.mapToCommentDto(c, getEventHitView(c.getEvent())))
-                .toList();
+        // извлечем из списка комментов события к которым писались комментарии
+        List<Event> eventsEntity = entitysList.stream().map(Comment::getEvent).toList();
+        // получим статистику посещений для списка событий одним запросом.
+        List<EventShortDto> eventsShort = statsClient.getEventShortDto(eventsEntity);
+        return CommentMapper.mapToCommentDto(entitysList, new ArrayList<>(eventsShort));
     }
 
     @Transactional
@@ -86,7 +93,7 @@ public class CommentServiceImpl implements CommentService {
 
         log.info("Comment {}, updated", updateComment);
         commentEntity = commentRepository.save(commentEntity);
-        return CommentMapper.mapToCommentDto(commentEntity, getEventHitView(commentEntity.getEvent()));
+        return CommentMapper.mapToCommentDto(commentEntity, statsClient.getEventHitView(commentEntity.getEvent()));
     }
 
     @Transactional
@@ -115,22 +122,5 @@ public class CommentServiceImpl implements CommentService {
         String reason = "The required object was not found.";
         String message = String.format("%s with id=%d was not found", nameEntity, id);
         return new NotFoundException(message, reason);
-    }
-
-    // Метод для получения кол-ва просмотров из сервиса статистики.
-    // Не понятно за какой период получать статистику, указал за 365 дней.
-    private Long getEventHitView(Event event) {
-        // получим выборку в один год от текущей даты.
-        LocalDateTime start = LocalDateTime.now().minusDays(365);
-        LocalDateTime end = LocalDateTime.now();
-        Long eventId = event.getId();
-        List<String> uris = new ArrayList<>();
-        uris.add("/events/" + eventId);
-        List<ViewStatsDto> views = statsClient.getStats(start, end, uris, true);
-        Long view = 0L;
-        if (!views.isEmpty()) {
-            return views.getFirst().getHits();
-        }
-        return view;
     }
 }

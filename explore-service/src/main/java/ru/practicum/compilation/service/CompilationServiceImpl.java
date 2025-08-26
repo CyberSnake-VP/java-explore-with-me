@@ -5,8 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.StatsClient;
-import ru.practicum.ViewStatsDto;
+import ru.practicum.utils.StatsClientUtil;
 import ru.practicum.compilation.dto.CompilationDto;
 import ru.practicum.compilation.dto.NewCompilationDto;
 import ru.practicum.compilation.dto.UpdateCompilationRequest;
@@ -14,16 +13,12 @@ import ru.practicum.compilation.dto.mapper.CompilationMapper;
 import ru.practicum.compilation.model.Compilation;
 import ru.practicum.compilation.repository.CompilationRepository;
 import ru.practicum.event.dto.EventShortDto;
-import ru.practicum.event.dto.mapper.EventMapper;
 import ru.practicum.event.model.Event;
 import ru.practicum.event.repository.EventRepository;
 import ru.practicum.exception.NotFoundException;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
@@ -32,7 +27,8 @@ import java.util.Map;
 public class CompilationServiceImpl implements CompilationService {
     private final CompilationRepository compilationRepository;
     private final EventRepository eventRepository;
-    private final StatsClient statsClient;
+    // утилитарный класс с методами для получения статистики.
+    private final StatsClientUtil statsClient;
 
     @Transactional
     @Override
@@ -52,7 +48,7 @@ public class CompilationServiceImpl implements CompilationService {
         if (newCompilationDto.getEvents() != null) {
             eventsEntity = eventRepository.findAllById(newCompilationDto.getEvents());
             entity = CompilationMapper.mapToEntity(newCompilationDto, eventsEntity);
-            eventsShort = getEventShortDto(eventsEntity); // получаем список событий с кол-вом просмотров для обратного dto
+            eventsShort = statsClient.getEventShortDto(eventsEntity); // получаем список событий с кол-вом просмотров для обратного dto
         } else {
             entity = CompilationMapper.mapToEntity(newCompilationDto, eventsEntity);
         }
@@ -86,7 +82,7 @@ public class CompilationServiceImpl implements CompilationService {
         if (requestDto.getEvents() != null) {
             List<Event> eventsEntity = eventRepository.findAllById(requestDto.getEvents());
             entity.setEvents(eventsEntity);
-            eventsShort = getEventShortDto(eventsEntity);   // заменил получение данных с учетом статистики из бд
+            eventsShort = statsClient.getEventShortDto(eventsEntity);   // заменил получение данных с учетом статистики из бд
         }
         if (requestDto.getPinned() != null) {
             entity.setPinned(requestDto.getPinned());
@@ -106,7 +102,7 @@ public class CompilationServiceImpl implements CompilationService {
         Compilation entity = compilationRepository.findById(compId).orElseThrow(() -> getNotFoundException(compId));
         List<Event> eventsEntity = entity.getEvents();
         // формируем список событий для обратного dto с учетом кол-ва просмотров
-        List<EventShortDto> eventsShort = getEventShortDto(eventsEntity);
+        List<EventShortDto> eventsShort = statsClient.getEventShortDto(eventsEntity);
         return CompilationMapper.mapToCompilationDto(entity, eventsShort);
     }
 
@@ -134,55 +130,10 @@ public class CompilationServiceImpl implements CompilationService {
         List<CompilationDto> compilationsDto = new ArrayList<>();
         List<EventShortDto> eventsShort;
         for (Compilation c : compilations) {
-            eventsShort = getEventShortDto(c.getEvents());  // переделал метод получения данных из бд статистики.
+            eventsShort = statsClient.getEventShortDto(c.getEvents());  // переделал метод получения данных из бд статистики.
             compilationsDto.add(CompilationMapper.mapToCompilationDto(c, eventsShort));
         }
         return compilationsDto;
     }
 
-    /**
-     * Метод для получения списка объектов EventShortDto c количеством просмотров, для формирования обратного dto.
-     * Идея в том, что теперь мы будем формировать список из uri каждого события из входящего списка событий.
-     * Теперь один раз получаем статистику по этим uri, возьмем от туда кол-во просмотров конкретного события по uri
-     */
-    private List<EventShortDto> getEventShortDto(List<Event> events) {
-
-        // формируем список для последующей отправки запроса клиента
-        log.info("Get events short: {}", events);
-        List<String> uris = new ArrayList<>();
-        for (Event e : events) {
-            log.info("date createdOn on event {}", e.getCreatedOn());
-            uris.add("/events/" + e.getId());
-        }
-
-        LocalDateTime start = LocalDateTime.now().minusDays(365);
-
-        // поиск будем вести до текущей даты
-        LocalDateTime end = LocalDateTime.now();
-
-        // получим статистику за все события.
-        List<ViewStatsDto> views = statsClient.getStats(start, end, uris, false);
-
-        // Таблица с событием и его кол-ом просмотров.
-        Map<Event, Long> hits = new HashMap<>();
-
-        /** Запускаем перебор по списку событий, используем id конкретного события
-         * и запишем это событие в случае совпадения в таблицу, где ключ будет событие и в качестве зн-я будет кол-во просмотров
-         * Если в сервисе статистики события еще нет, то запишем в качестве кол-ва просмотров "0" */
-        if (!events.isEmpty()) {
-            for (Event e : events) {
-                views.stream()
-                        .filter(v -> v.getUri().equals("/events/" + e.getId()))
-                        .findFirst()
-                        .ifPresentOrElse(v -> hits.put(e, v.getHits()), () -> hits.put(e, 0L));
-            }
-        }
-        /** Возвращаем список уже подготовленных объектов EventShortDto c количеством просмотров, для формирования обратного dto.
-         * Используем нашу таблицу hits, получаем объект EventShortDto, в его параметрах, событие и кол-во просмотров.
-         * Берем эти данные из нашей подготовленной таблицы hits.
-         * */
-        return hits.entrySet().stream()
-                .map(entry -> EventMapper.mapToShortDto(entry.getKey(), entry.getValue()))
-                .toList();
-    }
 }
