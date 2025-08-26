@@ -47,7 +47,10 @@ public class StatsClientUtil {
         List<EventShortDto> result = new ArrayList<>();
 
         /** Переделал логику работы метода, заменил таблицу hash-map, где ключ был event а значение view(кол-во просмотров)
-         * Проблема в том, что комменты можно оставлять к одному и тому же событию. Мапа не позволяла хранить одинаковые Event по ключу */
+         * Проблема в том, что комменты можно оставлять к одному и тому же событию много раз.
+         * Мапа не позволяла хранить одинаковые Event по ключу, заменил на добавление результата сразу итоговый в список.
+         * Тем самым получаем список с возможными одинаковыми событиями в условиях комментариев, и с установленным зн-ем просмотров.
+         * */
         if (!events.isEmpty()) {
             for (Event e : events) {
                 views.stream()
@@ -78,7 +81,7 @@ public class StatsClientUtil {
         return view;
     }
 
-    // метод для записи в сервис статистики данных о просмотрах событий
+    // метод для записи в сервис статистики данных о просмотренных событиях
     public void addHitEvent(HttpServletRequest servlet, List<Event> events) {
         for (Event e : events) {
             EndpointHitDto hitDto = EndpointHitDto.builder()
@@ -91,7 +94,7 @@ public class StatsClientUtil {
         }
     }
 
-    // метод для записи в сервис статистики данных о просмотрах событий
+    // метод для записи в сервис статистики данных о просмотренном событии
     public void addHitEvent(HttpServletRequest servlet) {
         EndpointHitDto hitDto = EndpointHitDto.builder()
                 .app("ewm-main-service")
