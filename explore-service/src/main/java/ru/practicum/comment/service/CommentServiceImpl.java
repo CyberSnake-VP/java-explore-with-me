@@ -83,7 +83,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CommentDto update(Long userId, Long commentId, UpdateCommentDto updateComment) {
         log.info("Update comment {}, for user: {}", updateComment, userId);
-        // ищем пользователя
+        // ищем пользователя по id
         userRepository.findById(userId).orElseThrow(() -> getNotFoundException(userId, "User"));
         // ищем нужный комментарий для обновления
         Comment commentEntity = commentRepository.findByIdAndAuthorId(commentId, userId)
