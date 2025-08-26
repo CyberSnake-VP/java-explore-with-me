@@ -10,9 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.EndpointHitDto;
-import ru.practicum.StatsClient;
-import ru.practicum.ViewStatsDto;
 import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.event.dto.*;
@@ -28,6 +25,7 @@ import ru.practicum.request.model.RequestStatus;
 import ru.practicum.request.repository.RequestRepository;
 import ru.practicum.user.model.User;
 import ru.practicum.user.repository.UserRepository;
+import ru.practicum.utils.StatsClientUtil;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -45,7 +43,7 @@ public class EventServiceImpl implements EventService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final RequestRepository requestRepository;
-    private final StatsClient statsClient;
+    private final StatsClientUtil statsClient;
 
     @Transactional
     @Override
@@ -80,9 +78,8 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> getEventsByUserPrivate(Long userId, Pageable pageable) {
         log.info("Get all events by user: {}, pageable: {}", userId, pageable);
 
-        return eventRepository.findAllByInitiatorId(userId, pageable).stream()
-                .map(event -> EventMapper.mapToShortDto(event, getEventHitView(event)))
-                .toList();
+        List<Event> entityList = eventRepository.findAllByInitiatorId(userId, pageable);
+        return statsClient.getEventShortDto(entityList);
     }
 
     @Override
@@ -92,7 +89,7 @@ public class EventServiceImpl implements EventService {
         Event entity = eventRepository.findByInitiatorIdAndId(userId, eventId)
                 .orElseThrow(() -> getNotFoundException(eventId));
 
-        return EventMapper.mapToFullDto(entity, getEventHitView(entity));
+        return EventMapper.mapToFullDto(entity, statsClient.getEventHitView(entity));
     }
 
     @Transactional
@@ -162,7 +159,7 @@ public class EventServiceImpl implements EventService {
 
         log.info("Saved event with id {}", entity.getId());
 
-        return EventMapper.mapToFullDto(eventRepository.save(entity), getEventHitView(entity));
+        return EventMapper.mapToFullDto(eventRepository.save(entity), statsClient.getEventHitView(entity));
     }
 
     @Override
@@ -204,7 +201,7 @@ public class EventServiceImpl implements EventService {
         log.info("Found {} events", events.size());
         // получаем список событий с количеством просмотров, я выбрал период год в методе getEventHitView
         return events.stream()
-                .map(e -> EventMapper.mapToFullDto(e, getEventHitView(e)))
+                .map(e -> EventMapper.mapToFullDto(e, statsClient.getEventHitView(e)))
                 .toList();
     }
 
@@ -276,15 +273,13 @@ public class EventServiceImpl implements EventService {
             }
         }
 
-        return EventMapper.mapToFullDto(eventRepository.save(entity), getEventHitView(entity));
+        return EventMapper.mapToFullDto(eventRepository.save(entity), statsClient.getEventHitView(entity));
     }
 
     @Override
     public List<EventShortDto> getEvents(GetEventRequest req, HttpServletRequest servlet) {
         log.info("Get events by admin: {}", req);
 
-        // добавить в сервис статистики с помощью клиента данные о просмотре
-        addHitEvent(servlet);
         // Так же для формирования запросов по фильтрам используем QueryDSL, все фильтры складываем в список Expression
         QEvent event = QEvent.event;
         List<BooleanExpression> conditions = new ArrayList<>();
@@ -333,10 +328,11 @@ public class EventServiceImpl implements EventService {
         log.info("Get events page: {}", pageRequest);
         List<Event> events = eventRepository.findAll(request, pageRequest).getContent();
 
+        // добавить в сервис статистики с помощью клиента данные о просмотре
+        statsClient.addHitEvent(servlet);
+
         log.info("Found events, size:{}", events.size());
-        return events.stream()
-                .map(e -> EventMapper.mapToShortDto(e, getEventHitView(e)))
-                .toList();
+        return events.stream().map(e -> EventMapper.mapToShortDto(e, statsClient.getEventHitView(e))).toList();
     }
 
     @Override
@@ -344,12 +340,12 @@ public class EventServiceImpl implements EventService {
         log.info("Get event: {}", eventId);
 
         // отправляем в сервис статистики данные, через клиента.
-        addHitEvent(servlet);
+        statsClient.addHitEvent(servlet);
 
         Event entity = eventRepository.findByIdAndState(eventId, State.PUBLISHED)
                 .orElseThrow(() -> getNotFoundException(eventId));
         log.info("event: {}", entity);
-        return EventMapper.mapToFullDto(entity, getEventHitView(entity));
+        return EventMapper.mapToFullDto(entity, statsClient.getEventHitView(entity));
     }
 
     @Override
@@ -494,33 +490,5 @@ public class EventServiceImpl implements EventService {
         String message = String.format("Cannot publish the event because it's not in the right state: %s",
                 action);
         return new UpdateEventStatusException(message);
-    }
-
-    // Метод для получения кол-ва просмотров из сервиса статистики.
-    // Не понятно за какой период получать статистику, указал за 365 дней.
-    private Long getEventHitView(Event event) {
-        // получим выборку в один год от текущей даты.
-        LocalDateTime start = LocalDateTime.now().minusDays(365);
-        LocalDateTime end = LocalDateTime.now();
-        Long eventId = event.getId();
-        List<String> uris = new ArrayList<>();
-        uris.add("/events/" + eventId);
-        List<ViewStatsDto> views = statsClient.getStats(start, end, uris, true);
-        Long view = 0L;
-        if (!views.isEmpty()) {
-            return views.getFirst().getHits();
-        }
-        return view;
-    }
-
-    // метод для записи в сервис статистики данных о просмотрах событий
-    private void addHitEvent(HttpServletRequest servlet) {
-        EndpointHitDto hitDto = EndpointHitDto.builder()
-                .app("ewm-main-service")
-                .uri(servlet.getRequestURI())
-                .ip(servlet.getRemoteAddr())
-                .timestamp(LocalDateTime.now())
-                .build();
-        statsClient.addHit(hitDto);
     }
 }
