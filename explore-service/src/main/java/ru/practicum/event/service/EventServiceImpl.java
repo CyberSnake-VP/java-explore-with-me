@@ -10,9 +10,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.EndpointHitDto;
-import ru.practicum.StatsClient;
-import ru.practicum.ViewStatsDto;
 import ru.practicum.category.model.Category;
 import ru.practicum.category.repository.CategoryRepository;
 import ru.practicum.event.dto.*;
@@ -81,7 +78,7 @@ public class EventServiceImpl implements EventService {
     public List<EventShortDto> getEventsByUserPrivate(Long userId, Pageable pageable) {
         log.info("Get all events by user: {}, pageable: {}", userId, pageable);
 
-        List<Event> entityList =  eventRepository.findAllByInitiatorId(userId, pageable);
+        List<Event> entityList = eventRepository.findAllByInitiatorId(userId, pageable);
         return statsClient.getEventShortDto(entityList);
     }
 

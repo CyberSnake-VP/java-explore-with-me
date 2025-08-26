@@ -48,7 +48,7 @@ public class CommentMapper {
                 .build();
     }
 
-    public static List<CommentDto> mapToCommentDto( List<Comment> comments, ArrayList<EventShortDto> events) {
+    public static List<CommentDto> mapToCommentDto(List<Comment> comments, ArrayList<EventShortDto> events) {
         List<CommentDto> commentDtos = new ArrayList<>();
 
         /** Пробегаемся по списку комментариев и списку событий. У комментария одно событие, значит в моменте перебора событий
@@ -57,7 +57,7 @@ public class CommentMapper {
          * Для следующего комментария проделываем тоже самое, тогда первое событие в списке событий уже будет его.*/
         for (Comment comment : comments) {
             for (EventShortDto eventShort : events) {
-                commentDtos.add(mapToCommentDto(comment,eventShort));
+                commentDtos.add(mapToCommentDto(comment, eventShort));
                 events.remove(eventShort);
                 break;
             }

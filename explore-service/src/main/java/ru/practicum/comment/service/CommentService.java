@@ -9,10 +9,16 @@ import java.util.List;
 
 public interface CommentService {
     CommentDto create(NewCommentDto newComment, Long userId, Long eventId);
+
     CommentDto getByUser(Long userId, Long commentId);
+
     List<CommentDto> getAllByUser(Long userId, Pageable pageable);
+
     List<CommentDto> getAllByEvent(Long eventId, Pageable pageable);
+
     CommentDto update(Long userId, Long commentId, UpdateCommentDto updateComment);
+
     void delete(Long userId, Long commentId);
+
     void delete(Long commentId);
 }
