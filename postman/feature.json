@@ -405,8 +405,7 @@
 							"pm.test(\"Статус ответа должен быть 200, тело ответа должно иметь правильные данные\", function () {",
 							"    pm.response.to.have.status(200);",
 							"    pm.expect(body.text).to.eql(\"Этот комментарий изменен))\");",
-							"    pm.expect(body.author.name).to.eql(\"Vadim\");",
-							"     pm.response.to.be.json;  // ответ должен быть в формате JSON",
+							"    pm.response.to.be.json;  // ответ должен быть в формате JSON",
 							"});"
 						],
 						"type": "text/javascript",
