@@ -81,19 +81,6 @@ public class StatsClientUtil {
         return view;
     }
 
-    // метод для записи в сервис статистики данных о просмотренных событиях
-    public void addHitEvent(HttpServletRequest servlet, List<Event> events) {
-        for (Event e : events) {
-            EndpointHitDto hitDto = EndpointHitDto.builder()
-                    .app("ewm-main-service")
-                    .uri(servlet.getRequestURI() + "/" + e.getId())
-                    .ip(servlet.getRemoteAddr())
-                    .timestamp(LocalDateTime.now())
-                    .build();
-            statsClient.addHit(hitDto);
-        }
-    }
-
     // метод для записи в сервис статистики данных о просмотренном событии
     public void addHitEvent(HttpServletRequest servlet) {
         EndpointHitDto hitDto = EndpointHitDto.builder()

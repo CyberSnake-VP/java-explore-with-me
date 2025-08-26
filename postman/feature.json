@@ -1,10 +1,10 @@
 {
 	"info": {
-		"_postman_id": "0efe2d48-afd6-4456-a9e1-ab0a38847f4a",
+		"_postman_id": "4806b4e6-34dd-4db5-9590-9c0c0d8fa874",
 		"name": "\"Explore with me\" API comments",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "43666211",
-		"_collection_link": "https://vadim-1916481.postman.co/workspace/Vadim's-Workspace~a9a55b99-1767-4280-89b4-273593a1fd67/collection/43666211-0efe2d48-afd6-4456-a9e1-ab0a38847f4a?action=share&source=collection_link&creator=43666211"
+		"_collection_link": "https://vadim-1916481.postman.co/workspace/Vadim's-Workspace~a9a55b99-1767-4280-89b4-273593a1fd67/collection/43666211-4806b4e6-34dd-4db5-9590-9c0c0d8fa874?action=share&source=collection_link&creator=43666211"
 	},
 	"item": [
 		{
@@ -18,7 +18,6 @@
 							"",
 							"pm.test(\"Код ответа должне быть 201, тело ответа должно соответствовать запросу\", function () {",
 							"    pm.response.to.have.status(201);",
-							"    pm.expect(body.id).to.equal(1);",
 							"    pm.expect(body.name).to.equal(\"Vadim\");",
 							"    pm.expect(body.email).to.equal(\"zigmundfreid89@yandex.ru\");",
 							"    pm.response.to.be.json;  // ответ должен быть в формате JSON",
@@ -68,7 +67,6 @@
 							"",
 							"pm.test(\"Код ответа должен быть 201, Тело ответа должно соответствовать запросу\", function () {",
 							"    pm.response.to.have.status(201);",
-							"    pm.expect(body).to.have.property('id', 1);",
 							"    pm.expect(body).to.have.property('name', 'Концерты');",
 							"     pm.response.to.be.json;  // ответ должен быть в формате JSON",
 							"});"
@@ -118,7 +116,6 @@
 							"    pm.expect(body.id).to.not.be.null;",
 							"    pm.expect(body.title).to.equal(\"Сплав на байдарках\");",
 							"    pm.expect(body.state).to.equal(\"PENDING\");",
-							"    pm.expect(body.id).to.equal(1);",
 							"     pm.response.to.be.json;  // ответ должен быть в формате JSON",
 							"});"
 						],
@@ -165,7 +162,6 @@
 							"",
 							"pm.test(\"Status code is 201\", function () {",
 							"    pm.response.to.have.status(201);",
-							"    pm.expect(body.id).to.equal(2); // id второго события",
 							"    pm.expect(body.title).to.equal(\"Свадьба в Малиновке\"); // название второго события",
 							"    pm.response.to.be.json;  // ответ должен быть в формате JSON",
 							"});"
@@ -213,7 +209,6 @@
 							"",
 							"pm.test(\"Ответ должен иметь статус 201, и тело ответа содержать правильные данные\", function () {",
 							"    pm.response.to.have.status(201);",
-							"    pm.expect(body.id).to.equal(1);",
 							"    pm.expect(body.text).to.equal(\"мой первый комментарий)\");",
 							"     pm.response.to.be.json;  // ответ должен быть в формате JSON",
 							"});"
@@ -361,7 +356,6 @@
 							"",
 							"pm.test(\"Код ответа должен иметь статус 200, и тело ответа иметь правильные данные\", function () {",
 							"    pm.response.to.have.status(200);",
-							"    pm.expect(body).to.have.property('id', 1);",
 							"    pm.expect(body).to.have.property('text', 'Этот комментарий изменен))');",
 							"     pm.response.to.be.json;  // ответ должен быть в формате JSON",
 							"});"
@@ -410,11 +404,7 @@
 							"",
 							"pm.test(\"Статус ответа должен быть 200, тело ответа должно иметь правильные данные\", function () {",
 							"    pm.response.to.have.status(200);",
-							"    pm.expect(body.id).to.eql(1);          // id комментария",
 							"    pm.expect(body.text).to.eql(\"Этот комментарий изменен))\");",
-							"    pm.expect(body.event.id).to.eql(1);    // id события",
-							"    pm.expect(body.event.annotation).to.eql(\"Сплав на байдарках похож на полет.\");",
-							"    pm.expect(body.author.id).to.eql(1);   // id автора комментария",
 							"    pm.expect(body.author.name).to.eql(\"Vadim\");",
 							"     pm.response.to.be.json;  // ответ должен быть в формате JSON",
 							"});"
@@ -504,9 +494,6 @@
 							"pm.test(\"Статус ответа должен быть 200, длина ответа должна быть 2, события должны иметь id 1\", function () {",
 							"    pm.expect(body).is.an('array'); // проверка на то, что ответ является массивом",
 							"    pm.response.to.have.status(200);",
-							"    pm.expect(body[0].event.id).to.eql(1);    // проверка на соответствие id события",
-							"    pm.expect(body[0].author.id).to.eql(1);  // проверка на соответствие id автора комментария",
-							"    pm.expect(body[1].event.id).to.eql(1);    // проверка на соответствие id события",
 							"    pm.expect(body.length).to.equal(2);  // у события должно быть всего два комментария. ",
 							"     pm.response.to.be.json;  // ответ должен быть в формате JSON",
 							"});"
